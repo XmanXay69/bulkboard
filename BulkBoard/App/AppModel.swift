@@ -40,5 +40,6 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
 @Observable
 final class AppModel {
     var section: AppSection = .dashboard
+    var onboardingStep: OnboardingView.Step = .welcome
     var startupError: String?
 }

@@ -22,6 +22,7 @@ enum Theme {
     static let background = Color(light: 0xF6F2EC, dark: 0x0A1020)
     static let surface = Color(light: 0xFFFFFF, dark: 0x121A2E)
     static let surfaceRaised = Color(light: 0xF0EBE3, dark: 0x1A2440)
+    static let sidebar = Color(light: 0xEDE6DC, dark: 0x070C18)
     static let stroke = Color(light: 0x0E1726, dark: 0xFFFFFF, lightAlpha: 0.08, darkAlpha: 0.08)
     static let textPrimary = Color(light: 0x0E1726, dark: 0xF2F4F8)
     static let textSecondary = Color(light: 0x5A6478, dark: 0x9AA6BF)
