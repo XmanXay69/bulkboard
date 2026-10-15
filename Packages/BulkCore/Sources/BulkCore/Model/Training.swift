@@ -80,15 +80,15 @@ public struct PlannedExercise: Codable, Hashable, Sendable, Identifiable {
     public var repText: String { repLow == repHigh ? "\(repLow)" : "\(repLow)–\(repHigh)" }
 }
 
-/// A court conditioning block for game days.
-public struct CourtBlock: Codable, Hashable, Sendable {
+/// A non-lifting block: court conditioning on game days, mobility on rest days.
+public struct SessionBlock: Codable, Hashable, Sendable {
     public var title: String
-    public var drills: [String]
+    public var items: [String]
     public var minutes: Int
 
-    public init(title: String, drills: [String], minutes: Int) {
+    public init(title: String, items: [String], minutes: Int) {
         self.title = title
-        self.drills = drills
+        self.items = items
         self.minutes = minutes
     }
 }
@@ -100,18 +100,18 @@ public struct PlannedDay: Codable, Hashable, Sendable, Identifiable {
     public var title: String
     public var focus: String
     public var exercises: [PlannedExercise]
-    public var court: CourtBlock?
+    public var block: SessionBlock?
 
     public var id: Int { weekday }
 
     public init(weekday: Int, dayType: DayType, title: String, focus: String,
-                exercises: [PlannedExercise] = [], court: CourtBlock? = nil) {
+                exercises: [PlannedExercise] = [], block: SessionBlock? = nil) {
         self.weekday = weekday
         self.dayType = dayType
         self.title = title
         self.focus = focus
         self.exercises = exercises
-        self.court = court
+        self.block = block
     }
 }
 
@@ -132,6 +132,32 @@ public struct LoggedSet: Codable, Hashable, Sendable {
     }
 
     public var volumeKg: Double { Double(reps) * weightKg }
+}
+
+/// A set inside a logged workout session. Weight is in kilograms.
+public struct SessionSet: Codable, Hashable, Sendable, Identifiable {
+    public var id: UUID
+    public var exerciseID: UUID
+    public var reps: Int
+    public var weightKg: Double
+    public var isWarmup: Bool
+    public var isDone: Bool
+    public var prKinds: [PRKind]
+
+    public init(id: UUID = UUID(), exerciseID: UUID, reps: Int, weightKg: Double,
+                isWarmup: Bool = false, isDone: Bool = false, prKinds: [PRKind] = []) {
+        self.id = id
+        self.exerciseID = exerciseID
+        self.reps = reps
+        self.weightKg = weightKg
+        self.isWarmup = isWarmup
+        self.isDone = isDone
+        self.prKinds = prKinds
+    }
+
+    public func logged(on date: Date) -> LoggedSet {
+        LoggedSet(exerciseID: exerciseID, date: date, reps: reps, weightKg: weightKg, isWarmup: isWarmup)
+    }
 }
 
 public enum CourtSessionKind: String, Codable, CaseIterable, Sendable {
