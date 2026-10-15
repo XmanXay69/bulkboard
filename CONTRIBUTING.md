@@ -38,9 +38,9 @@ That runs `swift test` for BulkCore and `xcodebuild test` for the app. New logic
 
 ## Design notes
 
-- Dark is the default; every color is a token in `Design/Theme.swift` with light and dark values.
-- Charts plot one entity color each (`Design/ChartStyle.swift`), using steps validated for color-vision deficiency and contrast. Don't put two measures with different units on one axis; use two charts.
-- Status colors (green/red) mean on-target/over and always come with an icon or label.
+- Keep it quiet: neutral surfaces, one accent (`Theme.accent`), system fonts, native controls. Every color is a token in `Design/Theme.swift` with light and dark values.
+- Charts plot a single measure in the accent color (`Design/ChartStyle.swift`). Don't put two measures with different units on one axis; use two charts.
+- Green and red are reserved for on-target/over and always come with an icon or label.
 
 ## Screenshots
 

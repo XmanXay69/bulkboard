@@ -101,8 +101,17 @@ struct AISettings: View {
                     }
                 }
                 if client.isAvailable {
-                    Picker("Model", selection: $client.model) {
+                    Picker("Text model", selection: $client.model) {
                         ForEach(client.models, id: \.self) { Text($0).tag($0) }
+                    }
+                    if client.visionModels.isEmpty {
+                        LabeledContent("Photo model") {
+                            Text("None installed (ollama pull llama3.2-vision)").foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Picker("Photo model", selection: $client.visionModel) {
+                            ForEach(client.visionModels, id: \.self) { Text($0).tag($0) }
+                        }
                     }
                 }
                 Button("Check again") { Task { await client.refresh() } }
@@ -113,7 +122,7 @@ struct AISettings: View {
             }
             if !client.isAvailable {
                 Section("Set it up") {
-                    Text("1. Install Ollama from ollama.com\n2. Run: ollama pull llama3.2\n3. Keep Ollama running, then press Check again.")
+                    Text("1. Install Ollama from ollama.com\n2. Run: ollama pull llama3.2\n3. For photo reviews also run: ollama pull llama3.2-vision\n4. Keep Ollama running, then press Check again.")
                         .font(.system(size: 12, design: .monospaced))
                         .textSelection(.enabled)
                 }

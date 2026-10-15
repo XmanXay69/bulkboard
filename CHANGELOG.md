@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.2.0 · Body & Dunk, new look
+
+### New
+- **Body & Dunk** section. Check-ins with height, weight, wingspan, reach, wrist and tape measurements, jump numbers and an optional photo.
+- **Proportion analysis**: each part vs a frame-scaled target (McCallum ratios, golden-ratio V-taper), Navy body-fat estimate, FFMI, and flagged focus areas.
+- **AI photo review** with a local Ollama vision model (for example `llama3.2-vision`). The photo never leaves the Mac.
+- **Focus areas** applied to the training plan: extra sets plus an accessory for lagging muscles, with an optional protein bump.
+- **Dunk calculator**: reach estimate, required running jump, gap, inches lost per 10 lb at the same power, rough timeline, and a one-click jump program (depth jumps, trap-bar jumps, calf/ankle work, approach jumps on court days) with an optional 0.5 lb/week gain cap.
+
+### Changed
+- Redesigned UI: neutral surfaces, one accent color, system fonts, native controls, plain labels. Follows the system appearance by default.
+- Toasts instead of confetti; XP and levels removed from the interface.
+- New app icon.
+
+### Data
+- New check-in records migrate automatically from v0.1 stores. JSON backups now include check-ins, focus areas and the dunk goal (photos stay on disk).
+
 ## v0.1.0 · First release
 
 The first public build of BulkBoard: a local-first Mac app for bulking while keeping your basketball conditioning.
