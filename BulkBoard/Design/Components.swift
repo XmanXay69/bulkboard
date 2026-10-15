@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - Containers
 
 struct CardModifier: ViewModifier {
-    var padding: CGFloat = 18
+    var padding: CGFloat = 16
 
     func body(content: Content) -> some View {
         content
@@ -16,15 +16,25 @@ struct CardModifier: ViewModifier {
 }
 
 extension View {
-    func card(padding: CGFloat = 18) -> some View { modifier(CardModifier(padding: padding)) }
+    func card(padding: CGFloat = 16) -> some View { modifier(CardModifier(padding: padding)) }
 
-    /// Standard scrolling page background.
+    /// Standard page background.
     func pageBackground() -> some View {
         background(Theme.background.ignoresSafeArea())
     }
 }
 
-struct Eyebrow: View {
+/// A card used for the main figure on a screen.
+struct Panel<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content.card(padding: 20)
+    }
+}
+
+/// Small secondary label above a group of content.
+struct SectionLabel: View {
     var text: String
     var color: Color = Theme.textSecondary
 
@@ -34,25 +44,28 @@ struct Eyebrow: View {
     }
 
     var body: some View {
-        Text(text.uppercased())
-            .font(.eyebrow)
-            .tracking(1.4)
+        Text(text)
+            .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(color)
     }
 }
 
 struct PageHeader<Trailing: View>: View {
-    var eyebrow: String
     var title: String
+    var subtitle: String?
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 4) {
-                Eyebrow(eyebrow, color: Theme.hardwood)
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(Theme.textPrimary)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.textSecondary)
+                }
             }
             Spacer()
             trailing
@@ -61,58 +74,37 @@ struct PageHeader<Trailing: View>: View {
 }
 
 extension PageHeader where Trailing == EmptyView {
-    init(eyebrow: String, title: String) {
-        self.init(eyebrow: eyebrow, title: title) { EmptyView() }
+    init(title: String, subtitle: String? = nil) {
+        self.init(title: title, subtitle: subtitle) { EmptyView() }
     }
 }
 
-// MARK: - Scoreboard stats
+// MARK: - Stats
 
-/// A big scoreboard-style number with a label.
-struct ScoreboardStat: View {
+/// A number with a label underneath.
+struct StatView: View {
     var value: String
     var label: String
     var unit: String?
-    var color: Color = Theme.scoreboard
-    var size: CGFloat = 34
+    var size: CGFloat = 28
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(.scoreboard(size))
-                    .foregroundStyle(color)
+                    .font(.stat(size))
+                    .foregroundStyle(Theme.textPrimary)
                     .contentTransition(.numericText())
                 if let unit {
                     Text(unit)
-                        .font(.system(size: size * 0.38, weight: .bold, design: .rounded))
-                        .foregroundStyle(color.opacity(0.7))
+                        .font(.system(size: max(11, size * 0.42), weight: .medium))
+                        .foregroundStyle(Theme.textSecondary)
                 }
             }
-            Eyebrow(label)
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.textSecondary)
         }
-    }
-}
-
-/// LED-ish digital readout used for the hero numbers.
-struct ScoreboardPanel<Content: View>: View {
-    @ViewBuilder var content: Content
-
-    var body: some View {
-        content
-            .padding(.horizontal, 22)
-            .padding(.vertical, 18)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
-                    .fill(Color(light: 0x16213A, dark: 0x070C18))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
-                    .strokeBorder(LinearGradient(colors: [Theme.hardwood.opacity(0.7), Theme.hardwood.opacity(0.1)],
-                                                 startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5)
-            )
-            .environment(\.colorScheme, .dark)
     }
 }
 
@@ -131,8 +123,8 @@ enum TargetStatus {
     var color: Color {
         switch self {
         case .under: Theme.textSecondary
-        case .onTarget: Theme.net
-        case .over: Theme.rim
+        case .onTarget: Theme.positive
+        case .over: Theme.negative
         }
     }
 
@@ -145,12 +137,11 @@ enum TargetStatus {
     }
 }
 
-/// Horizontal macro progress bar with over/under readout.
+/// Thin progress bar with a value / target readout.
 struct MacroBar: View {
     var label: String
     var value: Double
     var target: Double
-    var color: Color
     var unit: String = "g"
     var compact = false
 
@@ -158,67 +149,48 @@ struct MacroBar: View {
     private var fraction: Double { target > 0 ? min(value / target, 1.25) : 0 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 3 : 6) {
+        VStack(alignment: .leading, spacing: compact ? 3 : 5) {
             HStack(spacing: 6) {
                 Text(label)
-                    .font(.system(size: compact ? 11 : 13, weight: .semibold, design: .rounded))
+                    .font(.system(size: compact ? 11 : 13))
                     .foregroundStyle(Theme.textSecondary)
                 Spacer()
                 HStack(spacing: 0) {
                     Text("\(Fmt.int(value))")
-                        .font(.system(size: compact ? 12 : 14, weight: .bold, design: .rounded).monospacedDigit())
+                        .font(.system(size: compact ? 11 : 13, weight: .semibold).monospacedDigit())
                         .foregroundStyle(Theme.textPrimary)
                         .contentTransition(.numericText())
                     Text(" / \(Fmt.int(target)) \(unit)")
-                        .font(.system(size: compact ? 11 : 12, weight: .medium, design: .rounded).monospacedDigit())
+                        .font(.system(size: compact ? 11 : 13).monospacedDigit())
                         .foregroundStyle(Theme.textSecondary)
                 }
-                if !compact {
-                    Image(systemName: status.symbol)
-                        .font(.system(size: 10, weight: .heavy))
-                        .foregroundStyle(status.color)
+                if !compact && status == .onTarget {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Theme.positive)
                 }
             }
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Theme.surfaceRaised)
-                    Capsule()
-                        .fill(LinearGradient(colors: [color.opacity(0.75), color], startPoint: .leading, endPoint: .trailing))
-                        .frame(width: max(0, proxy.size.width * min(fraction, 1)))
-                    if fraction > 1.05 {
-                        Capsule()
-                            .fill(Theme.rim)
-                            .frame(width: 3)
-                            .offset(x: proxy.size.width - 3)
-                    }
-                }
-            }
-            .frame(height: compact ? 5 : 8)
-            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: fraction)
+            ProgressBar(progress: fraction, height: compact ? 4 : 6)
         }
     }
 }
 
-/// XP-style chunky progress bar.
-struct XPBar: View {
+struct ProgressBar: View {
     var progress: Double
-    var height: CGFloat = 12
-    var color: Color = Theme.hardwood
+    var height: CGFloat = 6
+    var color: Color = Theme.accent
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Capsule().fill(Theme.surfaceRaised)
                 Capsule()
-                    .fill(LinearGradient(colors: [Theme.scoreboard, color], startPoint: .leading, endPoint: .trailing))
-                    .frame(width: max(height, proxy.size.width * min(max(progress, 0), 1)))
-                    .overlay(alignment: .top) {
-                        Capsule().fill(.white.opacity(0.25)).frame(height: height * 0.35).padding(.horizontal, 4).padding(.top, 2)
-                    }
+                    .fill(color)
+                    .frame(width: max(0, proxy.size.width * min(max(progress, 0), 1)))
             }
         }
         .frame(height: height)
-        .animation(.spring(response: 0.6, dampingFraction: 0.75), value: progress)
+        .animation(.easeOut(duration: 0.35), value: progress)
     }
 }
 
@@ -226,7 +198,6 @@ struct XPBar: View {
 struct RingGauge: View {
     var value: Double
     var target: Double
-    var color: Color
     var lineWidth: CGFloat = 10
 
     var body: some View {
@@ -235,35 +206,29 @@ struct RingGauge: View {
             Circle().stroke(Theme.surfaceRaised, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: min(fraction, 1))
-                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .stroke(Theme.accent,
+                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            if fraction > 1.05 {
-                Circle()
-                    .trim(from: 0, to: min(fraction - 1, 1))
-                    .stroke(Theme.rim, style: StrokeStyle(lineWidth: lineWidth * 0.5, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-            }
         }
-        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: fraction)
+        .animation(.easeOut(duration: 0.4), value: fraction)
     }
 }
 
-// MARK: - Badges, banners, buttons
+// MARK: - Badges, banners
 
 struct DayTypeBadge: View {
     var dayType: DayType
     var large = false
 
     var body: some View {
-        Label(dayType.title.uppercased(), systemImage: dayType.symbol)
-            .font(.system(size: large ? 13 : 10, weight: .heavy, design: .rounded))
-            .tracking(1)
+        Label(dayType.title, systemImage: dayType.symbol)
+            .font(.system(size: large ? 12 : 11, weight: .medium))
             .lineLimit(1)
             .fixedSize()
-            .padding(.horizontal, large ? 12 : 8)
-            .padding(.vertical, large ? 6 : 4)
-            .foregroundStyle(Theme.color(for: dayType))
-            .background(Theme.color(for: dayType).opacity(0.14), in: Capsule())
+            .padding(.horizontal, large ? 10 : 7)
+            .padding(.vertical, large ? 4 : 3)
+            .foregroundStyle(Theme.textSecondary)
+            .background(Theme.surfaceRaised, in: Capsule())
     }
 }
 
@@ -273,16 +238,17 @@ struct WarningBanner: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: serious ? "exclamationmark.triangle.fill" : "info.circle.fill")
-                .foregroundStyle(serious ? Theme.rim : Theme.paint)
+            Image(systemName: serious ? "exclamationmark.triangle.fill" : "info.circle")
+                .foregroundStyle(serious ? Theme.negative : Theme.textSecondary)
             Text(message)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 13))
                 .foregroundStyle(Theme.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background((serious ? Theme.rim : Theme.paint).opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(serious ? Theme.negative.opacity(0.08) : Theme.surfaceRaised,
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -294,12 +260,12 @@ struct EmptyStateView: View {
     var action: (() -> Void)?
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             Image(systemName: symbol)
-                .font(.system(size: 38, weight: .semibold))
-                .foregroundStyle(Theme.hardwood)
+                .font(.system(size: 30, weight: .regular))
+                .foregroundStyle(Theme.textSecondary)
             Text(title)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary)
             Text(message)
                 .font(.system(size: 13))
@@ -308,82 +274,47 @@ struct EmptyStateView: View {
                 .frame(maxWidth: 360)
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .buttonStyle(HardwoodButtonStyle())
+                    .buttonStyle(.borderedProminent)
                     .padding(.top, 4)
             }
         }
-        .padding(40)
+        .padding(36)
         .frame(maxWidth: .infinity)
     }
 }
 
-struct HardwoodButtonStyle: ButtonStyle {
-    var compact = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: compact ? 12 : 14, weight: .bold, design: .rounded))
-            .padding(.horizontal, compact ? 12 : 18)
-            .padding(.vertical, compact ? 6 : 10)
-            .foregroundStyle(.white)
-            .background(Theme.heroGradient, in: Capsule())
-            .shadow(color: Theme.hardwood.opacity(configuration.isPressed ? 0.1 : 0.35), radius: 8, y: 3)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
-    }
-}
-
-struct GhostButtonStyle: ButtonStyle {
-    var compact = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: compact ? 12 : 14, weight: .semibold, design: .rounded))
-            .padding(.horizontal, compact ? 10 : 16)
-            .padding(.vertical, compact ? 5 : 9)
-            .foregroundStyle(Theme.textPrimary)
-            .background(Theme.surfaceRaised.opacity(configuration.isPressed ? 0.6 : 1), in: Capsule())
-            .overlay(Capsule().strokeBorder(Theme.stroke))
-    }
-}
-
-/// Small pill showing a macro value.
+/// Calories and macros as one quiet line of text.
 struct MacroPill: View {
     var macros: Macros
 
     var body: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 0) {
-                Text("\(Fmt.int(macros.kcal))").foregroundStyle(Theme.kcal)
-                Text(" kcal").foregroundStyle(Theme.textSecondary)
-            }
-            Text("\(Fmt.int(macros.protein))P").foregroundStyle(Theme.protein)
-            Text("\(Fmt.int(macros.carbs))C").foregroundStyle(Theme.carbs)
-            Text("\(Fmt.int(macros.fat))F").foregroundStyle(Theme.fat)
+        HStack(spacing: 6) {
+            Text("\(Fmt.int(macros.kcal)) kcal").foregroundStyle(Theme.textPrimary)
+            Text("\(Fmt.int(macros.protein))P · \(Fmt.int(macros.carbs))C · \(Fmt.int(macros.fat))F")
+                .foregroundStyle(Theme.textSecondary)
         }
-        .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+        .font(.system(size: 11, weight: .medium).monospacedDigit())
     }
 }
 
 struct AIEstimateBadge: View {
     var body: some View {
         Label("AI estimate", systemImage: "sparkles")
-            .font(.system(size: 10, weight: .bold, design: .rounded))
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .foregroundStyle(Theme.paint)
-            .background(Theme.paint.opacity(0.14), in: Capsule())
+            .font(.system(size: 10, weight: .medium))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .foregroundStyle(Theme.accent)
+            .background(Theme.accent.opacity(0.1), in: Capsule())
     }
 }
 
 struct DemoBadge: View {
     var body: some View {
-        Text("DEMO")
-            .font(.system(size: 9, weight: .heavy, design: .rounded))
-            .tracking(1)
+        Text("Demo")
+            .font(.system(size: 10, weight: .medium))
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .foregroundStyle(Theme.scoreboard)
-            .background(Theme.scoreboard.opacity(0.15), in: Capsule())
+            .foregroundStyle(Theme.textSecondary)
+            .background(Theme.surfaceRaised, in: Capsule())
     }
 }

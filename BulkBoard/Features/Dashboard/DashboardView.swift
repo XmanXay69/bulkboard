@@ -60,37 +60,34 @@ struct DashboardView: View {
     }
 
     private func header(dayType: DayType, stats: ProgressStats) -> some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 6) {
-                Eyebrow(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()), color: Theme.hardwood)
-                HStack(spacing: 12) {
-                    Text(dayType.title.uppercased())
-                        .font(.system(size: 36, weight: .black, design: .rounded))
-                        .tracking(2)
-                        .foregroundStyle(Theme.textPrimary)
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 10) {
+                    Text("Today").font(.system(size: 24, weight: .bold)).foregroundStyle(Theme.textPrimary)
                     DayTypeBadge(dayType: dayType, large: true)
                 }
-                Text(greeting(dayType)).font(.system(size: 13)).foregroundStyle(Theme.textSecondary)
+                Text("\(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day())) · \(greeting(dayType))")
+                    .font(.system(size: 13)).foregroundStyle(Theme.textSecondary)
             }
             Spacer()
             HStack(spacing: 8) {
                 if OllamaClient.shared.isAvailable {
                     Button { appModel.activeSheet = .coach } label: { Label("Ask the coach", systemImage: "sparkles") }
-                        .buttonStyle(GhostButtonStyle(compact: true))
+                        .buttonStyle(.bordered).controlSize(.small)
                 }
-                Button { appModel.activeSheet = .weighIn } label: { Label("Weigh-in", systemImage: "scalemass.fill") }
-                    .buttonStyle(GhostButtonStyle(compact: true))
+                Button { appModel.activeSheet = .weighIn } label: { Label("Weigh-in", systemImage: "scalemass") }
+                    .buttonStyle(.bordered).controlSize(.small)
                 Button { appModel.activeSheet = .quickAdd } label: { Label("Quick add food", systemImage: "plus") }
-                    .buttonStyle(HardwoodButtonStyle(compact: true))
+                    .buttonStyle(.borderedProminent).controlSize(.small)
             }
         }
     }
 
     private func greeting(_ dayType: DayType) -> String {
         switch dayType {
-        case .lifting: "Weight room today. Eat big, lift heavy."
-        case .conditioning: "Court day. Carbs are up to fuel the runs."
-        case .rest: "Recovery day. Hit protein, walk, sleep."
+        case .lifting: "Lifting today"
+        case .conditioning: "Court session today, carbs are a little higher"
+        case .rest: "Rest day: protein, a walk and sleep"
         }
     }
 }
@@ -104,33 +101,33 @@ struct TodayMacrosCard: View {
 
     var body: some View {
         let remaining = target - eaten
-        ScoreboardPanel {
+        Panel {
             HStack(spacing: 26) {
                 ZStack {
-                    RingGauge(value: eaten.kcal, target: target.kcal, color: Theme.kcal, lineWidth: 14)
+                    RingGauge(value: eaten.kcal, target: target.kcal, lineWidth: 10)
                     VStack(spacing: 0) {
-                        Text(Fmt.int(eaten.kcal)).font(.scoreboard(30)).foregroundStyle(Theme.kcal).contentTransition(.numericText())
-                        Text("of \(Fmt.int(target.kcal)) kcal").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.textSecondary)
+                        Text(Fmt.int(eaten.kcal)).font(.stat(26)).foregroundStyle(Theme.textPrimary).contentTransition(.numericText())
+                        Text("of \(Fmt.int(target.kcal)) kcal").font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
                     }
                 }
-                .frame(width: 150, height: 150)
+                .frame(width: 136, height: 136)
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Eyebrow("Today's macros", color: Theme.hardwood)
+                        SectionLabel("Today's macros")
                         Spacer()
                         if Adherence.isHit(eaten: eaten, target: target) {
-                            Label("ON TARGET", systemImage: "checkmark.seal.fill")
-                                .font(.system(size: 10, weight: .heavy, design: .rounded))
-                                .foregroundStyle(Theme.net)
+                            Label("On target", systemImage: "checkmark.circle")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Theme.positive)
                         }
                     }
-                    MacroBar(label: "Protein", value: eaten.protein, target: target.protein, color: Theme.protein)
-                    MacroBar(label: "Carbs", value: eaten.carbs, target: target.carbs, color: Theme.carbs)
-                    MacroBar(label: "Fat", value: eaten.fat, target: target.fat, color: Theme.fat)
+                    MacroBar(label: "Protein", value: eaten.protein, target: target.protein)
+                    MacroBar(label: "Carbs", value: eaten.carbs, target: target.carbs)
+                    MacroBar(label: "Fat", value: eaten.fat, target: target.fat)
                     Text(remaining.kcal > 0
                          ? "\(Fmt.int(remaining.kcal)) kcal and \(Fmt.int(max(0, remaining.protein))) g protein to go"
                          : "Target hit. \(Fmt.int(-remaining.kcal)) kcal over.")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12))
                         .foregroundStyle(Theme.textSecondary)
                 }
             }
@@ -154,19 +151,19 @@ struct TodayWorkoutCard: View {
 
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Eyebrow("Today's session", color: Theme.hardwood)
+                SectionLabel("Today's session")
                 Spacer()
                 if let day { DayTypeBadge(dayType: day.dayType) }
             }
-            Text(day?.title ?? "No plan").font(.system(size: 20, weight: .heavy, design: .rounded)).foregroundStyle(Theme.textPrimary)
+            Text(day?.title ?? "No plan").font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.textPrimary)
             if let day {
                 if !day.exercises.isEmpty {
                     ForEach(day.exercises.prefix(5)) { planned in
                         HStack {
                             Text(names[planned.exerciseID] ?? "Exercise").font(.system(size: 12)).lineLimit(1)
                             Spacer()
-                            Text("\(planned.sets)×\(planned.repText)").font(.system(size: 12, weight: .bold, design: .rounded).monospacedDigit())
-                                .foregroundStyle(Theme.scoreboard)
+                            Text("\(planned.sets)×\(planned.repText)").font(.system(size: 12, weight: .bold).monospacedDigit())
+                                .foregroundStyle(Theme.textPrimary)
                         }
                     }
                     if day.exercises.count > 5 {
@@ -179,19 +176,19 @@ struct TodayWorkoutCard: View {
             Spacer(minLength: 4)
             HStack {
                 if let todayLift {
-                    Label("Done · \(todayLift.prCount) PRs", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.net)
+                    Label("Done · \(todayLift.prCount) PRs", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.positive)
                         .font(.system(size: 12, weight: .bold))
                 } else if let todayCourt {
-                    Label("Logged \(todayCourt.minutes) min", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.net)
+                    Label("Logged \(todayCourt.minutes) min", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.positive)
                         .font(.system(size: 12, weight: .bold))
                 }
                 Spacer()
                 if active != nil {
-                    Button { onStart() } label: { Label("Resume", systemImage: "play.fill") }.buttonStyle(HardwoodButtonStyle(compact: true))
+                    Button { onStart() } label: { Label("Resume", systemImage: "play.fill") }.buttonStyle(.borderedProminent).controlSize(.small)
                 } else if day?.dayType == .lifting && todayLift == nil {
-                    Button { onStart() } label: { Label("Start workout", systemImage: "play.fill") }.buttonStyle(HardwoodButtonStyle(compact: true))
+                    Button { onStart() } label: { Label("Start workout", systemImage: "play.fill") }.buttonStyle(.borderedProminent).controlSize(.small)
                 } else if day?.dayType == .conditioning && todayCourt == nil {
-                    Button { onLogCourt() } label: { Label("Log hoops", systemImage: "basketball.fill") }.buttonStyle(HardwoodButtonStyle(compact: true))
+                    Button { onLogCourt() } label: { Label("Log session", systemImage: "basketball") }.buttonStyle(.borderedProminent).controlSize(.small)
                 }
             }
         }
@@ -215,9 +212,9 @@ struct TodayMealsCard: View {
         let extras = intake.filter { $0.planEntryID == nil }
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Eyebrow("Today's meals", color: Theme.hardwood)
+                SectionLabel("Today's meals")
                 Spacer()
-                Button("Week plan", action: onOpenPlan).buttonStyle(GhostButtonStyle(compact: true))
+                Button("Week plan", action: onOpenPlan).buttonStyle(.bordered).controlSize(.small)
             }
             if entries.isEmpty && extras.isEmpty {
                 EmptyStateView(symbol: "fork.knife", title: "Nothing planned today", message: "Auto-fill your week in Meal Plan, or quick-add what you eat.",
@@ -229,10 +226,10 @@ struct TodayMealsCard: View {
                     HStack(spacing: 12) {
                         Image(systemName: eaten ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 22))
-                            .foregroundStyle(eaten ? Theme.net : Theme.textSecondary)
+                            .foregroundStyle(eaten ? Theme.positive : Theme.textSecondary)
                             .contentTransition(.symbolEffect(.replace))
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(entry.slot.title.uppercased()).font(.eyebrow).tracking(1).foregroundStyle(Theme.textSecondary)
+                            Text(entry.slot.title).font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
                             Text(library.name(for: entry) + (entry.servings != 1 ? " ×\(Fmt.number(entry.servings, maxDecimals: 2))" : ""))
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(eaten ? Theme.textSecondary : Theme.textPrimary)
@@ -248,9 +245,9 @@ struct TodayMealsCard: View {
             }
             ForEach(extras) { record in
                 HStack(spacing: 12) {
-                    Image(systemName: "plus.circle.fill").font(.system(size: 22)).foregroundStyle(Theme.paint)
+                    Image(systemName: "plus.circle.fill").font(.system(size: 22)).foregroundStyle(Theme.accent)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("EXTRA").font(.eyebrow).tracking(1).foregroundStyle(Theme.textSecondary)
+                        Text("EXTRA").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
                         Text(record.name).font(.system(size: 14, weight: .semibold))
                     }
                     Spacer()
@@ -264,7 +261,7 @@ struct TodayMealsCard: View {
             Button(action: onQuickAdd) { Label("Quick add something else", systemImage: "plus") }
                 .buttonStyle(.plain)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.hardwood)
+                .foregroundStyle(Theme.accent)
         }
         .card()
     }
@@ -275,7 +272,7 @@ struct TodayMealsCard: View {
         withAnimation(.spring(response: 0.3)) { IntakeActions.toggleEaten(entry, library: library, context: context) }
         let now = context.fetchAll(IntakeRecord.self).filter { $0.day == entry.day }.map(\.macros).sum()
         if !before && Adherence.isHit(eaten: now, target: target) {
-            appModel.celebrate(.dayComplete, title: "Macros on target", detail: "\(Fmt.int(now.kcal)) kcal · \(Fmt.int(now.protein)) g protein · +\(XP.perMacroDay) XP")
+            appModel.celebrate(.dayComplete, title: "Macros on target", detail: "\(Fmt.int(now.kcal)) kcal · \(Fmt.int(now.protein)) g protein")
         }
     }
 }
@@ -290,16 +287,16 @@ struct WeightTrendCard: View {
         let recent = stats.trend.filter { $0.date >= Date.now.adding(days: -42) }
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Eyebrow("Weight trend", color: Theme.hardwood)
+                SectionLabel("Weight trend")
                 Spacer()
-                Button("Log", action: onLog).buttonStyle(GhostButtonStyle(compact: true))
+                Button("Log", action: onLog).buttonStyle(.bordered).controlSize(.small)
             }
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(stats.latestTrendKg.map { units.weightValue($0) } ?? "–").font(.scoreboard(30)).foregroundStyle(Theme.textPrimary)
+                Text(stats.latestTrendKg.map { units.weightValue($0) } ?? "–").font(.stat(30)).foregroundStyle(Theme.textPrimary)
                 Text(units.massUnit).font(.system(size: 13, weight: .bold)).foregroundStyle(Theme.textSecondary)
                 Spacer()
                 if let perWeek = stats.projection?.kgPerWeek {
-                    Text("\(units.signedWeight(perWeek, decimals: 2))/wk").font(.system(size: 13, weight: .bold, design: .rounded))
+                    Text("\(units.signedWeight(perWeek, decimals: 2))/wk").font(.system(size: 13, weight: .bold))
                         .foregroundStyle(Theme.textPrimary)
                 }
             }
@@ -308,9 +305,9 @@ struct WeightTrendCard: View {
                     LineMark(x: .value("Date", point.date), y: .value("Weight", Units.display(kg: point.kg, in: profile.unitSystem)))
                         .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
                         .interpolationMethod(.monotone)
-                        .foregroundStyle(ChartPalette.weight)
+                        .foregroundStyle(ChartPalette.series)
                     AreaMark(x: .value("Date", point.date), y: .value("Weight", Units.display(kg: point.kg, in: profile.unitSystem)))
-                        .foregroundStyle(LinearGradient(colors: [ChartPalette.weight.opacity(0.25), .clear], startPoint: .top, endPoint: .bottom))
+                        .foregroundStyle(LinearGradient(colors: [ChartPalette.series.opacity(0.25), .clear], startPoint: .top, endPoint: .bottom))
                         .interpolationMethod(.monotone)
                 }
                 .chartXAxis(.hidden)
@@ -331,40 +328,32 @@ struct StreakCard: View {
     var stats: ProgressStats
 
     var body: some View {
-        let level = stats.level
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 10) {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 30))
-                    .foregroundStyle(LinearGradient(colors: [Theme.scoreboard, Theme.hardwood], startPoint: .top, endPoint: .bottom))
-                    .symbolEffect(.bounce, value: stats.currentStreak)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("\(stats.currentStreak)-day streak").font(.system(size: 18, weight: .heavy, design: .rounded))
-                    Text("Days on macros · best \(stats.longestStreak)").font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                SectionLabel("This week")
                 Spacer()
-                Text("LV \(level.level)").font(.scoreboard(22)).foregroundStyle(Theme.scoreboard)
+                Text("\(stats.currentStreak)-day macro streak · best \(stats.longestStreak)")
+                    .font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
             }
-            XPBar(progress: Double(level.into) / Double(level.needed))
-            Text("\(level.needed - level.into) XP to level \(level.level + 1)").font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
-            HStack(spacing: 8) {
-                chip("\(stats.thisWeek.daysHitMacros)/7", "macro days")
-                chip("\(stats.thisWeek.workoutsCompleted)/\(stats.thisWeek.workoutsPlanned)", "lifts")
-                chip("\(stats.thisWeek.courtSessions)", "court")
-                chip("\(stats.thisWeek.prs)", "PRs")
+            HStack(spacing: 0) {
+                cell("\(stats.thisWeek.daysHitMacros)/7", "Macro days")
+                Divider().frame(height: 30)
+                cell("\(stats.thisWeek.workoutsCompleted)/\(stats.thisWeek.workoutsPlanned)", "Lifts")
+                Divider().frame(height: 30)
+                cell("\(stats.thisWeek.courtSessions)", "Court")
+                Divider().frame(height: 30)
+                cell("\(stats.thisWeek.prs)", "PRs")
             }
         }
         .card()
     }
 
-    private func chip(_ value: String, _ label: String) -> some View {
-        VStack(spacing: 1) {
-            Text(value).font(.system(size: 14, weight: .heavy, design: .rounded).monospacedDigit()).foregroundStyle(Theme.textPrimary)
-            Text(label.uppercased()).font(.system(size: 8, weight: .bold)).tracking(0.5).foregroundStyle(Theme.textSecondary)
+    private func cell(_ value: String, _ label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value).font(.stat(17)).foregroundStyle(Theme.textPrimary)
+            Text(label).font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
-        .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
@@ -391,7 +380,7 @@ struct QuickAddSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Quick add").font(.system(size: 22, weight: .heavy, design: .rounded))
+            Text("Quick add").font(.system(size: 22, weight: .semibold))
             Picker("Source", selection: $tab) {
                 Text("Foods").tag(0)
                 Text("Meals").tag(1)
@@ -431,7 +420,7 @@ struct QuickAddSheet: View {
                                            macros: macros, slot: slot, context: context)
                     dismiss()
                 }
-                .buttonStyle(HardwoodButtonStyle(compact: true))
+                .buttonStyle(.borderedProminent).controlSize(.small)
                 .keyboardShortcut(.defaultAction)
                 .disabled(name.isEmpty)
             }

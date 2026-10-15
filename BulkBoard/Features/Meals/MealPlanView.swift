@@ -36,7 +36,7 @@ struct MealPlanView: View {
         HStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    PageHeader(eyebrow: "Meal Plan", title: "Week of \(weekStart.monthDay)") {
+                    PageHeader(title: "Meal Plan", subtitle: "Week of \(weekStart.monthDay)") {
                         weekNavigator
                     }
                     actionBar(isEmpty: entries.isEmpty)
@@ -72,7 +72,7 @@ struct MealPlanView: View {
             Button { appModel.planWeekStart = weekStart.adding(days: 7) } label: { Image(systemName: "chevron.right") }
                 .help("Next week")
         }
-        .buttonStyle(GhostButtonStyle(compact: true))
+        .buttonStyle(.bordered).controlSize(.small)
     }
 
     private func actionBar(isEmpty: Bool) -> some View {
@@ -80,18 +80,18 @@ struct MealPlanView: View {
             Button {
                 withAnimation(.spring) { MealPlanActions.autoFill(weekOf: weekStart, context: context, seed: seed()) }
             } label: { Label(isEmpty ? "Auto-fill my week" : "Re-fill unlocked", systemImage: "wand.and.stars") }
-                .buttonStyle(HardwoodButtonStyle(compact: true))
+                .buttonStyle(.borderedProminent).controlSize(.small)
                 .help("Fill every unlocked slot to hit your targets (⇧⌘F)")
             Button {
                 withAnimation(.spring) { MealPlanActions.autoFill(weekOf: weekStart, context: context, seed: seed()) }
             } label: { Label("Shuffle", systemImage: "shuffle") }
-                .buttonStyle(GhostButtonStyle(compact: true))
+                .buttonStyle(.bordered).controlSize(.small)
                 .disabled(isEmpty)
                 .help("New picks for unlocked meals. Locked and eaten meals stay.")
             Button(role: .destructive) {
                 withAnimation { MealPlanActions.clearWeek(weekStart, context: context) }
             } label: { Label("Clear unlocked", systemImage: "trash") }
-                .buttonStyle(GhostButtonStyle(compact: true))
+                .buttonStyle(.bordered).controlSize(.small)
                 .disabled(isEmpty)
             Picker("Variety", selection: $variety) {
                 ForEach(MealVariety.allCases, id: \.self) { Text($0.title).tag($0) }
@@ -103,13 +103,13 @@ struct MealPlanView: View {
                 appModel.groceryRequest = weekStart
                 appModel.section = .grocery
             } label: { Label("Grocery list", systemImage: "cart.fill") }
-                .buttonStyle(GhostButtonStyle(compact: true))
+                .buttonStyle(.bordered).controlSize(.small)
                 .disabled(isEmpty)
                 .help("Build a grocery list from this week (⇧⌘G)")
             Button { appModel.showMealLibrary.toggle() } label: {
                 Label("Meals", systemImage: "sidebar.trailing")
             }
-            .buttonStyle(GhostButtonStyle(compact: true))
+            .buttonStyle(.bordered).controlSize(.small)
             .help("Show meals you can drag into the week")
         }
     }
@@ -124,10 +124,10 @@ struct MealPlanView: View {
         let avg = planned.isEmpty ? 0 : planned.map(\.0.kcal).reduce(0, +) / Double(planned.count)
         let avgProtein = planned.isEmpty ? 0 : planned.map(\.0.protein).reduce(0, +) / Double(planned.count)
         return HStack(spacing: 28) {
-            ScoreboardStat(value: Fmt.int(avg), label: "Avg kcal / day", color: Theme.kcal, size: 24)
-            ScoreboardStat(value: Fmt.int(avgProtein), label: "Avg protein", unit: "g", color: Theme.protein, size: 24)
-            ScoreboardStat(value: "\(onTarget)/7", label: "Days on target", color: Theme.net, size: 24)
-            ScoreboardStat(value: "\(entries.filter(\.isLocked).count)", label: "Locked meals", color: Theme.textPrimary, size: 24)
+            StatView(value: Fmt.int(avg), label: "Avg kcal / day", size: 24)
+            StatView(value: Fmt.int(avgProtein), label: "Avg protein", unit: "g", size: 24)
+            StatView(value: "\(onTarget)/7", label: "Days on target", size: 24)
+            StatView(value: "\(entries.filter(\.isLocked).count)", label: "Locked meals", size: 24)
             Spacer()
         }
         .card(padding: 14)
@@ -158,18 +158,18 @@ struct DayColumn: View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(WeekMath.weekdayShort[WeekMath.weekdayIndex(day)].uppercased())
-                        .font(.system(size: 13, weight: .heavy, design: .rounded))
-                        .foregroundStyle(isToday ? Theme.hardwood : Theme.textPrimary)
+                    Text(WeekMath.weekdayShort[WeekMath.weekdayIndex(day)])
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(isToday ? Theme.accent : Theme.textPrimary)
                     Text(day.formatted(.dateTime.day()))
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Theme.textSecondary)
                     Spacer()
-                    if isToday { Text("TODAY").font(.eyebrow).foregroundStyle(Theme.hardwood) }
+                    if isToday { Text("TODAY").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.accent) }
                 }
-                Label(dayType == .conditioning ? "GAME" : dayType == .lifting ? "PRACTICE" : "REST", systemImage: dayType.symbol)
-                    .font(.system(size: 9, weight: .heavy, design: .rounded))
-                    .foregroundStyle(Theme.color(for: dayType))
+                Label(dayType == .conditioning ? "Court" : dayType == .lifting ? "Lift" : "Rest", systemImage: dayType.symbol)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.textSecondary)
             }
             .padding(.horizontal, 4)
 
@@ -183,10 +183,10 @@ struct DayColumn: View {
         }
         .padding(8)
         .frame(minWidth: 128, maxWidth: .infinity, alignment: .top)
-        .background(isToday ? Theme.hardwood.opacity(0.06) : Theme.surface.opacity(0.5),
+        .background(isToday ? Theme.accent.opacity(0.06) : Theme.surface.opacity(0.5),
                     in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .strokeBorder(isToday ? Theme.hardwood.opacity(0.5) : Theme.stroke))
+            .strokeBorder(isToday ? Theme.accent.opacity(0.5) : Theme.stroke))
     }
 }
 
@@ -199,19 +199,21 @@ struct DayTotalsView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(Fmt.int(totals.kcal))
-                    .font(.scoreboard(18))
-                    .foregroundStyle(totals.kcal == 0 ? Theme.textSecondary : status.color == Theme.textSecondary ? Theme.textPrimary : status.color)
+                    .font(.stat(18))
+                    .foregroundStyle(totals.kcal == 0 ? Theme.textSecondary : Theme.textPrimary)
                     .contentTransition(.numericText())
-                Image(systemName: status.symbol)
-                    .font(.system(size: 9, weight: .heavy))
-                    .foregroundStyle(status.color)
+                if totals.kcal > 0 {
+                    Image(systemName: status.symbol)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(status.color)
+                }
                 Spacer()
             }
             Text("of \(Fmt.int(target.kcal)) kcal")
                 .font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.textSecondary)
-            MacroBar(label: "P", value: totals.protein, target: target.protein, color: Theme.protein, compact: true)
-            MacroBar(label: "C", value: totals.carbs, target: target.carbs, color: Theme.carbs, compact: true)
-            MacroBar(label: "F", value: totals.fat, target: target.fat, color: Theme.fat, compact: true)
+            MacroBar(label: "P", value: totals.protein, target: target.protein, compact: true)
+            MacroBar(label: "C", value: totals.carbs, target: target.carbs, compact: true)
+            MacroBar(label: "F", value: totals.fat, target: target.fat, compact: true)
         }
         .padding(10)
         .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -261,10 +263,10 @@ struct MealSlotCell: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
                     Image(systemName: slot.symbol).font(.system(size: 9))
-                    Text(slot.title.uppercased()).font(.system(size: 9, weight: .heavy, design: .rounded)).tracking(0.6)
+                    Text(slot.title).font(.system(size: 9, weight: .semibold))
                     Spacer(minLength: 0)
-                    if eaten { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.net) }
-                    if entry.isLocked { Image(systemName: "lock.fill").foregroundStyle(Theme.scoreboard) }
+                    if eaten { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.positive) }
+                    if entry.isLocked { Image(systemName: "lock.fill").foregroundStyle(Theme.textPrimary) }
                 }
                 .font(.system(size: 10))
                 .foregroundStyle(Theme.textSecondary)
@@ -274,8 +276,8 @@ struct MealSlotCell: View {
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 4) {
-                    Text("\(Fmt.int(macros.kcal))").foregroundStyle(Theme.kcal)
-                    Text("\(Fmt.int(macros.protein))P").foregroundStyle(Theme.protein)
+                    Text("\(Fmt.int(macros.kcal))").foregroundStyle(Theme.textPrimary)
+                    Text("\(Fmt.int(macros.protein))P").foregroundStyle(Theme.textPrimary)
                     Spacer(minLength: 0)
                     if entry.servings != 1 {
                         Text("×\(Fmt.number(entry.servings, maxDecimals: 2))")
@@ -284,13 +286,13 @@ struct MealSlotCell: View {
                             .foregroundStyle(Theme.textSecondary)
                     }
                 }
-                .font(.system(size: 10, weight: .bold, design: .rounded).monospacedDigit())
+                .font(.system(size: 10, weight: .bold).monospacedDigit())
             }
             .padding(8)
             .frame(maxWidth: .infinity, minHeight: 74, alignment: .topLeading)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(isTargeted ? Theme.hardwood : entry.isLocked ? Theme.scoreboard.opacity(0.5) : Theme.stroke,
+                .strokeBorder(isTargeted ? Theme.accent : entry.isLocked ? Theme.textSecondary.opacity(0.6) : Theme.stroke,
                               lineWidth: isTargeted ? 2 : 1))
             .opacity(eaten ? 0.75 : 1)
             .contentShape(Rectangle())
@@ -299,11 +301,11 @@ struct MealSlotCell: View {
                 Image(systemName: "plus")
                 Text(slot.title).font(.system(size: 11, weight: .semibold))
             }
-            .foregroundStyle(isTargeted ? Theme.hardwood : Theme.textSecondary)
+            .foregroundStyle(isTargeted ? Theme.accent : Theme.textSecondary)
             .frame(maxWidth: .infinity, minHeight: 74)
             .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(style: StrokeStyle(lineWidth: isTargeted ? 2 : 1, dash: [4, 4]))
-                .foregroundStyle(isTargeted ? Theme.hardwood : Theme.stroke))
+                .foregroundStyle(isTargeted ? Theme.accent : Theme.stroke))
             .contentShape(Rectangle())
         }
     }

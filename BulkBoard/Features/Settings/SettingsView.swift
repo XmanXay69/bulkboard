@@ -10,7 +10,6 @@ struct SettingsView: View {
             DataSettings().tabItem { Label("Data", systemImage: "externaldrive") }
         }
         .frame(width: 560, height: 470)
-        .tint(Theme.hardwood)
     }
 }
 
@@ -97,7 +96,7 @@ struct AISettings: View {
                 Toggle("Use local AI when Ollama is running", isOn: $client.isEnabled)
                 LabeledContent("Status") {
                     HStack(spacing: 6) {
-                        Circle().fill(client.isAvailable ? Theme.net : Theme.textSecondary).frame(width: 8, height: 8)
+                        Circle().fill(client.isAvailable ? Theme.positive : Theme.textSecondary).frame(width: 8, height: 8)
                         Text(client.isChecking ? "Checking…" : client.isAvailable ? "Connected" : "Not running")
                     }
                 }

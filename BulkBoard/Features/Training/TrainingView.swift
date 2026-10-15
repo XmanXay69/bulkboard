@@ -18,7 +18,7 @@ struct TrainingView: View {
     var body: some View {
         @Bindable var appModel = appModel
         VStack(alignment: .leading, spacing: 0) {
-            PageHeader(eyebrow: "Training", title: appModel.trainingTab == .log ? "Log a session" : "YMCA game plan") {
+            PageHeader(title: "Training", subtitle: "\(profile.liftingDays) lift · \(profile.courtDays) court · \(max(0, 7 - profile.liftingDays - profile.courtDays)) rest days a week") {
                 HStack(spacing: 10) {
                     Picker("Tab", selection: $appModel.trainingTab) {
                         ForEach(TrainingTab.allCases, id: \.self) { tab in
@@ -29,10 +29,10 @@ struct TrainingView: View {
                     .labelsHidden()
                     .frame(width: 360)
                     Button { appModel.activeSheet = .court(minutes: 60, kind: .pickup) } label: {
-                        Label("Log hoops", systemImage: "basketball.fill")
+                        Label("Log court session", systemImage: "basketball")
                     }
-                    .buttonStyle(GhostButtonStyle(compact: true))
-                    .help("Log a basketball session (⇧⌘B)")
+                    .buttonStyle(.bordered).controlSize(.small)
+                    .help("Log a basketball or conditioning session (⇧⌘B)")
                 }
             }
             .padding([.horizontal, .top], 24)
@@ -97,10 +97,10 @@ struct WeekPlanView: View {
                     Text("\(max(0, 7 - lifting - court)) rest").foregroundStyle(Theme.textSecondary)
                     if lifting != profile.liftingDays || court != profile.courtDays {
                         Button("Rebuild week") { rebuild() }
-                            .buttonStyle(HardwoodButtonStyle(compact: true))
+                            .buttonStyle(.borderedProminent).controlSize(.small)
                     } else {
                         Button("Regenerate") { rebuild() }
-                            .buttonStyle(GhostButtonStyle(compact: true))
+                            .buttonStyle(.bordered).controlSize(.small)
                             .help("Rebuild the split from your current settings")
                     }
                     Spacer()
@@ -160,15 +160,15 @@ struct DayPlanCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(WeekMath.weekdayLong[day.weekday].uppercased())
-                    .font(.system(size: 12, weight: .heavy, design: .rounded))
-                    .foregroundStyle(isToday ? Theme.hardwood : Theme.textSecondary)
-                if isToday { Text("TODAY").font(.eyebrow).foregroundStyle(Theme.hardwood) }
+                Text(WeekMath.weekdayLong[day.weekday])
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(isToday ? Theme.accent : Theme.textSecondary)
+                if isToday { Text("TODAY").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.accent) }
                 Spacer()
                 DayTypeBadge(dayType: day.dayType)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(day.title).font(.system(size: 17, weight: .heavy, design: .rounded)).foregroundStyle(Theme.textPrimary)
+                Text(day.title).font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.textPrimary)
                 Text(day.focus).font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
             }
             if !day.exercises.isEmpty {
@@ -180,8 +180,8 @@ struct DayPlanCard: View {
                                 .lineLimit(1)
                             Spacer()
                             Text("\(planned.sets) × \(planned.repText)")
-                                .font(.system(size: 12, weight: .bold, design: .rounded).monospacedDigit())
-                                .foregroundStyle(Theme.scoreboard)
+                                .font(.system(size: 12, weight: .bold).monospacedDigit())
+                                .foregroundStyle(Theme.textPrimary)
                         }
                     }
                 }
@@ -193,22 +193,22 @@ struct DayPlanCard: View {
                             .font(.system(size: 12)).foregroundStyle(Theme.textPrimary)
                             .labelStyle(.titleAndIcon)
                     }
-                    Text("~\(block.minutes) min").font(.eyebrow).foregroundStyle(Theme.textSecondary)
+                    Text("~\(block.minutes) min").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
                 }
             }
             Spacer(minLength: 0)
             HStack {
                 if isDone {
-                    Label("Done", systemImage: "checkmark.seal.fill").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.net)
+                    Label("Done", systemImage: "checkmark.seal.fill").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.positive)
                 }
                 Spacer()
                 switch day.dayType {
                 case .lifting:
                     Button { onStart() } label: { Label("Start", systemImage: "play.fill") }
-                        .buttonStyle(HardwoodButtonStyle(compact: true))
+                        .buttonStyle(.borderedProminent).controlSize(.small)
                 case .conditioning:
                     Button { onLogCourt() } label: { Label("Log it", systemImage: "basketball.fill") }
-                        .buttonStyle(GhostButtonStyle(compact: true))
+                        .buttonStyle(.bordered).controlSize(.small)
                 case .rest:
                     EmptyView()
                 }
@@ -217,7 +217,7 @@ struct DayPlanCard: View {
         .frame(maxWidth: .infinity, minHeight: 250, alignment: .topLeading)
         .card(padding: 16)
         .overlay(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
-            .strokeBorder(isToday ? Theme.hardwood.opacity(0.7) : .clear, lineWidth: 1.5))
+            .strokeBorder(isToday ? Theme.accent.opacity(0.7) : .clear, lineWidth: 1.5))
     }
 }
 
@@ -246,8 +246,8 @@ struct CourtSessionSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Image(systemName: "basketball.fill").font(.system(size: 22)).foregroundStyle(Theme.hardwood)
-                Text("Log a court session").font(.system(size: 22, weight: .heavy, design: .rounded))
+                Image(systemName: "basketball.fill").font(.system(size: 22)).foregroundStyle(Theme.accent)
+                Text("Log a court session").font(.system(size: 22, weight: .semibold))
             }
             Form {
                 Picker("Type", selection: $kind) {
@@ -262,7 +262,7 @@ struct CourtSessionSheet: View {
                     }
                 }
                 LabeledContent("Conditioning load") {
-                    Text("\(minutes * Int(rpe))").font(.scoreboard(18)).foregroundStyle(Theme.paint)
+                    Text("\(minutes * Int(rpe))").font(.stat(18)).foregroundStyle(Theme.accent)
                 }
                 TextField("Notes", text: $notes, prompt: Text("Ran 5s at the Y, legs felt heavy…"), axis: .vertical)
             }
@@ -277,7 +277,7 @@ struct CourtSessionSheet: View {
                     appModel.celebrate(.workoutComplete, title: kind.title, detail: "\(minutes) min · load \(minutes * Int(rpe))")
                     dismiss()
                 }
-                .buttonStyle(HardwoodButtonStyle(compact: true))
+                .buttonStyle(.borderedProminent).controlSize(.small)
                 .keyboardShortcut(.defaultAction)
             }
         }

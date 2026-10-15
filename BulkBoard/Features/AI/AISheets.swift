@@ -15,8 +15,8 @@ struct AIEstimateSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Image(systemName: "sparkles").foregroundStyle(Theme.paint)
-                Text("Estimate macros").font(.system(size: 18, weight: .heavy, design: .rounded))
+                Image(systemName: "sparkles").foregroundStyle(Theme.accent)
+                Text("Estimate macros").font(.system(size: 18, weight: .semibold))
                 Spacer()
                 Text(OllamaClient.shared.model).font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.textSecondary)
             }
@@ -46,11 +46,11 @@ struct AIEstimateSheet: View {
                         onApply(estimate)
                         dismiss()
                     }
-                    .buttonStyle(HardwoodButtonStyle(compact: true))
+                    .buttonStyle(.borderedProminent).controlSize(.small)
                     .keyboardShortcut(.defaultAction)
                 } else {
                     Button("Estimate") { Task { await run() } }
-                        .buttonStyle(HardwoodButtonStyle(compact: true))
+                        .buttonStyle(.borderedProminent).controlSize(.small)
                         .keyboardShortcut(.defaultAction)
                         .disabled(query.isEmpty || isWorking)
                 }
@@ -101,8 +101,8 @@ struct AskCoachSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(Theme.paint)
-                Text("Ask the coach").font(.system(size: 22, weight: .heavy, design: .rounded))
+                Image(systemName: "sparkles").font(.system(size: 18)).foregroundStyle(Theme.accent)
+                Text("Ask the coach").font(.system(size: 22, weight: .semibold))
                 Spacer()
                 if client.isAvailable {
                     Label(client.model, systemImage: "cpu").font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.textSecondary)
@@ -125,9 +125,9 @@ struct AskCoachSheet: View {
                     if let estimate {
                         HStack { Text(estimate.name).font(.system(size: 15, weight: .bold)); AIEstimateBadge() }
                         Text(estimate.serving).foregroundStyle(Theme.textSecondary)
-                        TargetScoreboard(macros: estimate.macros, size: 24)
+                        MacroSummary(macros: estimate.macros, size: 24)
                         Button(saved ? "Saved to My foods" : "Save as a custom food") { saveEstimate(estimate) }
-                            .buttonStyle(GhostButtonStyle(compact: true))
+                            .buttonStyle(.bordered).controlSize(.small)
                             .disabled(saved)
                     }
                     if !answer.isEmpty {
@@ -147,7 +147,7 @@ struct AskCoachSheet: View {
                 Spacer()
                 Button("Close") { dismiss() }.keyboardShortcut(.cancelAction)
                 Button("Ask") { Task { await run() } }
-                    .buttonStyle(HardwoodButtonStyle(compact: true))
+                    .buttonStyle(.borderedProminent).controlSize(.small)
                     .keyboardShortcut(.return, modifiers: .command)
                     .disabled(prompt.isEmpty || isWorking || !client.isAvailable)
             }

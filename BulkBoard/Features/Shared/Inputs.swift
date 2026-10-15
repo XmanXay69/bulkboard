@@ -35,7 +35,7 @@ struct IntStepperField: View {
         LabeledContent(label) {
             HStack(spacing: 8) {
                 Text("\(value)")
-                    .font(.system(size: 15, weight: .bold, design: .rounded).monospacedDigit())
+                    .font(.system(size: 15, weight: .bold).monospacedDigit())
                     .frame(minWidth: 28, alignment: .trailing)
                 if !unit.isEmpty { Text(unit).foregroundStyle(Theme.textSecondary) }
                 Stepper(label, value: $value, in: range).labelsHidden()
@@ -56,25 +56,25 @@ struct ChoiceCard: View {
         Button(action: action) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: symbol)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(isSelected ? Theme.hardwood : Theme.textSecondary)
-                    .frame(width: 24)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(.system(size: 14, weight: .bold, design: .rounded)).foregroundStyle(Theme.textPrimary)
+                    .font(.system(size: 16))
+                    .foregroundStyle(isSelected ? Theme.accent : Theme.textSecondary)
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.textPrimary)
                     Text(detail).font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
                 if isSelected {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.hardwood)
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.accent)
                 }
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(isSelected ? Theme.hardwood.opacity(0.12) : Theme.surfaceRaised,
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(isSelected ? Theme.hardwood : Theme.stroke, lineWidth: isSelected ? 1.5 : 1))
+            .background(isSelected ? Theme.accent.opacity(0.08) : Theme.surface,
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(isSelected ? Theme.accent : Theme.stroke, lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -90,15 +90,15 @@ struct Chip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                if isOn { Image(systemName: "xmark").font(.system(size: 9, weight: .heavy)) }
+                if isOn { Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)) }
                 Text(title)
             }
-            .font(.system(size: 12, weight: .semibold, design: .rounded))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .foregroundStyle(isOn ? .white : Theme.textPrimary)
-            .background(isOn ? AnyShapeStyle(Theme.rim) : AnyShapeStyle(Theme.surfaceRaised), in: Capsule())
-            .overlay(Capsule().strokeBorder(Theme.stroke))
+            .font(.system(size: 12, weight: .medium))
+            .padding(.horizontal, 11)
+            .padding(.vertical, 5)
+            .foregroundStyle(isOn ? Theme.accent : Theme.textPrimary)
+            .background(isOn ? Theme.accent.opacity(0.1) : Theme.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(isOn ? Theme.accent.opacity(0.6) : Theme.stroke))
         }
         .buttonStyle(.plain)
     }
@@ -107,11 +107,11 @@ struct Chip: View {
 extension GoalMode {
     var symbol: String {
         switch self {
-        case .bulk: "arrow.up.circle.fill"
-        case .bulkPerformance: "basketball.fill"
+        case .bulk: "arrow.up.circle"
+        case .bulkPerformance: "bolt.circle"
         case .recomp: "arrow.triangle.2.circlepath"
-        case .cut: "flame.fill"
-        case .maintain: "equal.circle.fill"
+        case .cut: "arrow.down.circle"
+        case .maintain: "equal.circle"
         }
     }
 }
@@ -137,8 +137,8 @@ struct MathBreakdownView: View {
             ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text("\(index + 1)")
-                        .font(.system(size: 11, weight: .heavy, design: .rounded).monospacedDigit())
-                        .foregroundStyle(Theme.hardwood)
+                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(Theme.accent)
                         .frame(width: 18)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(step.label).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.textPrimary)
@@ -147,7 +147,7 @@ struct MathBreakdownView: View {
                     }
                     Spacer()
                     Text(step.result)
-                        .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+                        .font(.system(size: 13, weight: .bold).monospacedDigit())
                         .foregroundStyle(Theme.textPrimary)
                         .multilineTextAlignment(.trailing)
                 }
@@ -158,18 +158,18 @@ struct MathBreakdownView: View {
     }
 }
 
-/// Four big numbers for a macro target.
-struct TargetScoreboard: View {
+/// Calories and macros as four plain figures.
+struct MacroSummary: View {
     var macros: Macros
-    var size: CGFloat = 38
+    var size: CGFloat = 30
 
     var body: some View {
-        ScoreboardPanel {
+        Panel {
             HStack(spacing: 28) {
-                ScoreboardStat(value: Fmt.int(macros.kcal), label: "Calories", unit: "kcal", color: Theme.kcal, size: size)
-                ScoreboardStat(value: Fmt.int(macros.protein), label: "Protein", unit: "g", color: Theme.protein, size: size)
-                ScoreboardStat(value: Fmt.int(macros.carbs), label: "Carbs", unit: "g", color: Theme.carbs, size: size)
-                ScoreboardStat(value: Fmt.int(macros.fat), label: "Fat", unit: "g", color: Theme.fat, size: size)
+                StatView(value: Fmt.int(macros.kcal), label: "Calories", unit: "kcal", size: size)
+                StatView(value: Fmt.int(macros.protein), label: "Protein", unit: "g", size: size)
+                StatView(value: Fmt.int(macros.carbs), label: "Carbs", unit: "g", size: size)
+                StatView(value: Fmt.int(macros.fat), label: "Fat", unit: "g", size: size)
                 Spacer(minLength: 0)
             }
         }

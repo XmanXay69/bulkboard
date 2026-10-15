@@ -37,14 +37,14 @@ struct ProgressScreen: View {
         let start = range.start(from: .now.dayStart)
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.spacing) {
-                PageHeader(eyebrow: "Progress", title: "The scoreboard") {
+                PageHeader(title: "Progress", subtitle: "Weight, strength, volume and consistency") {
                     HStack(spacing: 10) {
                         Picker("Range", selection: $range) {
                             ForEach(ChartRange.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                         }
                         .pickerStyle(.segmented).labelsHidden().frame(width: 150)
                         Button { appModel.activeSheet = .weighIn } label: { Label("Log weigh-in", systemImage: "scalemass.fill") }
-                            .buttonStyle(HardwoodButtonStyle(compact: true))
+                            .buttonStyle(.borderedProminent).controlSize(.small)
                     }
                 }
 
@@ -55,7 +55,7 @@ struct ProgressScreen: View {
                     WeighInTable(weights: weights.reversed().filter { $0.date >= start }, units: units)
                 } label: {
                     Text("Weigh-in data (\(weights.filter { $0.date >= start }.count))")
-                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.textSecondary)
+                        .font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
                 }
 
                 HStack(alignment: .top, spacing: Theme.spacing) {
@@ -63,19 +63,19 @@ struct ProgressScreen: View {
                     WeeklyBarsCard(title: "Lifting volume", subtitle: "Working-set tonnage per week",
                                    bars: stats.weeklyVolume.filter { $0.weekStart >= start.weekStart }
                                        .map { ($0.weekStart, Units.display(kg: $0.kg, in: profile.unitSystem)) },
-                                   color: ChartPalette.volume, valueText: { "\(Fmt.int($0)) \(units.massUnit)" })
+                                   color: ChartPalette.series, valueText: { "\(Fmt.int($0)) \(units.massUnit)" })
                 }
                 HStack(alignment: .top, spacing: Theme.spacing) {
                     WeeklyBarsCard(title: "Court load", subtitle: "Minutes × RPE per week",
                                    bars: stats.weeklyCourtLoad.filter { $0.weekStart >= start.weekStart }.map { ($0.weekStart, Double($0.load)) },
-                                   color: ChartPalette.court, valueText: { "\(Fmt.int($0)) load" })
+                                   color: ChartPalette.series, valueText: { "\(Fmt.int($0)) load" })
                     WeeklySummaryCard(this: stats.thisWeek, last: stats.lastWeek, units: units)
                 }
                 HStack(alignment: .top, spacing: Theme.spacing) {
                     AdherenceChartCard(title: "Calories vs target", days: stats.adherence.filter { $0.day >= max(start, .now.adding(days: -42)) },
-                                       value: \.kcalPercent, color: ChartPalette.calories)
+                                       value: \.kcalPercent, color: ChartPalette.series)
                     AdherenceChartCard(title: "Protein vs target", days: stats.adherence.filter { $0.day >= max(start, .now.adding(days: -42)) },
-                                       value: \.proteinPercent, color: ChartPalette.protein)
+                                       value: \.proteinPercent, color: ChartPalette.series)
                 }
             }
             .padding(24)
@@ -92,32 +92,26 @@ struct StatTilesRow: View {
     var units: UnitFormatter
 
     var body: some View {
-        let level = stats.level
         HStack(spacing: 14) {
             tile {
-                ScoreboardStat(value: stats.latestTrendKg.map { units.weightValue($0) } ?? "–", label: "Trend weight", unit: units.massUnit,
-                               color: Theme.textPrimary, size: 30)
+                StatView(value: stats.latestTrendKg.map { units.weightValue($0) } ?? "–", label: "Trend weight", unit: units.massUnit, size: 26)
                 if let perWeek = stats.projection?.kgPerWeek {
-                    Text("\(units.signedWeight(perWeek, decimals: 2)) / week").font(.system(size: 12, weight: .semibold))
+                    Text("\(units.signedWeight(perWeek, decimals: 2)) / week").font(.system(size: 12))
                         .foregroundStyle(Theme.textSecondary)
                 }
             }
             tile {
-                ScoreboardStat(value: stats.projection?.projectedGoalDate.map { $0.monthDay } ?? "–", label: "Projected goal date",
-                               color: Theme.textPrimary, size: 30)
+                StatView(value: stats.projection?.projectedGoalDate.map { $0.monthDay } ?? "–", label: "Projected goal date", size: 26)
                 Text("Goal \(units.weight(profile.goalWeightKg)) by \(profile.targetDate.monthDay)")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.textSecondary)
+                    .font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
             }
             tile {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Image(systemName: "flame.fill").foregroundStyle(Theme.hardwood).font(.system(size: 22))
-                    ScoreboardStat(value: "\(stats.currentStreak)", label: "Day macro streak", color: Theme.textPrimary, size: 30)
-                }
-                Text("Best \(stats.longestStreak) days").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.textSecondary)
+                StatView(value: "\(stats.currentStreak) days", label: "Macro streak", size: 26)
+                Text("Best \(stats.longestStreak) days").font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
             }
             tile {
-                ScoreboardStat(value: "LV \(level.level)", label: "\(Fmt.int(Double(stats.xp))) XP total", color: Theme.scoreboard, size: 30)
-                XPBar(progress: Double(level.into) / Double(level.needed), height: 9)
+                StatView(value: "\(stats.thisWeek.workoutsCompleted)/\(stats.thisWeek.workoutsPlanned)", label: "Workouts this week", size: 26)
+                Text("\(stats.totalPRs) PRs all-time").font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
             }
         }
     }
@@ -149,12 +143,12 @@ struct WeightChartCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Bodyweight").font(.system(size: 15, weight: .bold, design: .rounded))
+                    Text("Bodyweight").font(.system(size: 15, weight: .bold))
                     Text("7-day average with a trend projection toward your goal").font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
-                ChartLegend(items: [(ChartPalette.neutral, "Weigh-ins", false, true), (ChartPalette.weight, "7-day avg", false, false),
-                                    (ChartPalette.weight, "Projection", true, false), (ChartPalette.neutral, "Goal", true, false)])
+                ChartLegend(items: [("Weigh-ins", false, true), ("7-day avg", false, false),
+                                    ("Projection", true, false), ("Goal", true, false)])
             }
             if points.count < 2 {
                 EmptyStateView(symbol: "scalemass", title: "Log a few weigh-ins", message: "Two or more weigh-ins draw the trend; three over five days unlock the projection.")
@@ -170,13 +164,13 @@ struct WeightChartCard: View {
                                  series: .value("Series", "Trend"))
                             .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
                             .interpolationMethod(.monotone)
-                            .foregroundStyle(ChartPalette.weight)
+                            .foregroundStyle(ChartPalette.series)
                     }
                     ForEach(projection, id: \.date) { point in
                         LineMark(x: .value("Date", point.date), y: .value("Weight", Units.display(kg: point.kg, in: system)),
                                  series: .value("Series", "Projection"))
                             .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 4]))
-                            .foregroundStyle(ChartPalette.weight.opacity(0.8))
+                            .foregroundStyle(ChartPalette.series.opacity(0.8))
                     }
                     RuleMark(y: .value("Goal", goal))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
@@ -190,8 +184,8 @@ struct WeightChartCard: View {
                             .annotation(position: .top, spacing: 4, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                                 let average = stats.trend.last { $0.date <= nearest.date }
                                 ChartTooltip(title: nearest.date.shortDay, rows: [
-                                    (ChartPalette.neutral, "Weigh-in", units.weight(nearest.kg)),
-                                    (ChartPalette.weight, "7-day avg", average.map { units.weight($0.kg) } ?? "–"),
+                                    ("Weigh-in", units.weight(nearest.kg)),
+                                    ("7-day avg", average.map { units.weight($0.kg) } ?? "–"),
                                 ])
                             }
                     }
@@ -251,8 +245,8 @@ struct WeighInSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Image(systemName: "scalemass.fill").font(.system(size: 20)).foregroundStyle(Theme.hardwood)
-                Text("Log weigh-in").font(.system(size: 22, weight: .heavy, design: .rounded))
+                Image(systemName: "scalemass.fill").font(.system(size: 20)).foregroundStyle(Theme.accent)
+                Text("Log weigh-in").font(.system(size: 22, weight: .semibold))
             }
             Form {
                 DatePicker("When", selection: $date)
@@ -270,7 +264,7 @@ struct WeighInSheet: View {
                     try? context.save()
                     dismiss()
                 }
-                .buttonStyle(HardwoodButtonStyle(compact: true))
+                .buttonStyle(.borderedProminent).controlSize(.small)
                 .keyboardShortcut(.defaultAction)
                 .disabled(value < 50)
             }
@@ -310,7 +304,7 @@ struct LiftChartCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Estimated 1RM").font(.system(size: 15, weight: .bold, design: .rounded))
+                    Text("Estimated 1RM").font(.system(size: 15, weight: .bold))
                     Text("Best set per session (Epley)").font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
@@ -328,12 +322,12 @@ struct LiftChartCard: View {
                         LineMark(x: .value("Date", point.date), y: .value("e1RM", Units.display(kg: point.kg, in: units.system)))
                             .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
                             .interpolationMethod(.monotone)
-                            .foregroundStyle(ChartPalette.strength)
+                            .foregroundStyle(ChartPalette.series)
                         if prDays.contains(point.date) {
                             PointMark(x: .value("Date", point.date), y: .value("e1RM", Units.display(kg: point.kg, in: units.system)))
                                 .symbolSize(70)
-                                .foregroundStyle(ChartPalette.strength)
-                                .symbol { Circle().fill(ChartPalette.strength).frame(width: 9, height: 9).overlay(Circle().stroke(Theme.surface, lineWidth: 2)) }
+                                .foregroundStyle(ChartPalette.series)
+                                .symbol { Circle().fill(ChartPalette.series).frame(width: 9, height: 9).overlay(Circle().stroke(Theme.surface, lineWidth: 2)) }
                         }
                     }
                     if let selected, let point = history.min(by: { abs($0.date.timeIntervalSince(selected)) < abs($1.date.timeIntervalSince(selected)) }) {
@@ -341,8 +335,8 @@ struct LiftChartCard: View {
                             .foregroundStyle(Theme.textSecondary.opacity(0.4))
                             .annotation(position: .top, spacing: 4, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                                 ChartTooltip(title: point.date.shortDay, rows: [
-                                    (ChartPalette.strength, "e1RM", units.weight(point.kg, decimals: 0)),
-                                    (nil, prDays.contains(point.date) ? "PR session" : "", ""),
+                                    ("e1RM", units.weight(point.kg, decimals: 0)),
+                                    (prDays.contains(point.date) ? "PR session" : "", ""),
                                 ])
                             }
                     }
@@ -369,7 +363,7 @@ struct WeeklyBarsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 15, weight: .bold, design: .rounded))
+                Text(title).font(.system(size: 15, weight: .bold))
                 Text(subtitle).font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
             }
             if bars.isEmpty {
@@ -385,7 +379,7 @@ struct WeeklyBarsCard: View {
                         RuleMark(x: .value("Week", bar.0, unit: .weekOfYear))
                             .foregroundStyle(.clear)
                             .annotation(position: .top, spacing: 2, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                                ChartTooltip(title: "Week of \(bar.0.monthDay)", rows: [(color, title, valueText(bar.1))])
+                                ChartTooltip(title: "Week of \(bar.0.monthDay)", rows: [(title, valueText(bar.1))])
                             }
                     }
                 }
@@ -416,11 +410,11 @@ struct AdherenceChartCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.system(size: 15, weight: .bold, design: .rounded))
+                    Text(title).font(.system(size: 15, weight: .bold))
                     Text("Logged intake as % of that day's target · band = on target").font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
-                Text("\(hits)/\(days.count) days").font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(Theme.textPrimary)
+                Text("\(hits)/\(days.count) days").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.textPrimary)
             }
             if days.isEmpty {
                 EmptyStateView(symbol: "fork.knife", title: "Nothing logged yet", message: "Check meals off as you eat them.")
@@ -442,9 +436,9 @@ struct AdherenceChartCard: View {
                             .annotation(position: .top, spacing: 2, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                                 let isCalories = value == \DayAdherence.kcalPercent
                                 ChartTooltip(title: day.day.shortDay, rows: [
-                                    (color, "Eaten", isCalories ? "\(Fmt.int(day.eaten.kcal)) kcal" : "\(Fmt.int(day.eaten.protein)) g"),
-                                    (nil, "Target", isCalories ? "\(Fmt.int(day.target.kcal)) kcal" : "\(Fmt.int(day.target.protein)) g"),
-                                    (nil, "Of target", "\(Fmt.int(day[keyPath: value] * 100))%"),
+                                    ("Eaten", isCalories ? "\(Fmt.int(day.eaten.kcal)) kcal" : "\(Fmt.int(day.eaten.protein)) g"),
+                                    ("Target", isCalories ? "\(Fmt.int(day.target.kcal)) kcal" : "\(Fmt.int(day.target.protein)) g"),
+                                    ("Of target", "\(Fmt.int(day[keyPath: value] * 100))%"),
                                 ])
                             }
                     }
@@ -466,12 +460,12 @@ struct WeeklySummaryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Box score").font(.system(size: 15, weight: .bold, design: .rounded))
+            Text("Weekly summary").font(.system(size: 15, weight: .bold))
             Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
                 GridRow {
                     Text("")
-                    Eyebrow("This week", color: Theme.hardwood)
-                    Eyebrow("Last week")
+                    SectionLabel("This week")
+                    SectionLabel("Last week")
                 }
                 row("Days hit macros", "\(this.daysHitMacros)/7", "\(last.daysHitMacros)/7")
                 row("Workouts", "\(this.workoutsCompleted)/\(this.workoutsPlanned)", "\(last.workoutsCompleted)/\(last.workoutsPlanned)")
@@ -487,8 +481,8 @@ struct WeeklySummaryCard: View {
     private func row(_ label: String, _ current: String, _ previous: String) -> some View {
         GridRow {
             Text(label).font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
-            Text(current).font(.system(size: 15, weight: .heavy, design: .rounded).monospacedDigit()).foregroundStyle(Theme.textPrimary)
-            Text(previous).font(.system(size: 13, weight: .semibold, design: .rounded).monospacedDigit()).foregroundStyle(Theme.textSecondary)
+            Text(current).font(.system(size: 15, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.textPrimary)
+            Text(previous).font(.system(size: 13, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.textSecondary)
         }
     }
 }

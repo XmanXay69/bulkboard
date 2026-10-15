@@ -29,28 +29,28 @@ struct WorkoutLoggerView: View {
             VStack(alignment: .leading, spacing: 16) {
                 if let today, today.dayType == .lifting {
                     VStack(alignment: .leading, spacing: 10) {
-                        Eyebrow("Today · \(today.dayType.title)", color: Theme.hardwood)
-                        Text(today.title).font(.system(size: 26, weight: .heavy, design: .rounded))
+                        SectionLabel("Today · \(today.dayType.title)", color: Theme.accent)
+                        Text(today.title).font(.system(size: 26, weight: .semibold))
                         Text("\(today.exercises.count) exercises · \(today.exercises.map(\.sets).reduce(0, +)) sets")
                             .foregroundStyle(Theme.textSecondary)
                         Button { start(today) } label: { Label("Start today's workout", systemImage: "play.fill") }
-                            .buttonStyle(HardwoodButtonStyle())
+                            .buttonStyle(.borderedProminent)
                     }
                     .card()
                 } else {
                     VStack(alignment: .leading, spacing: 6) {
-                        Eyebrow(today?.dayType.title ?? "No plan", color: Theme.hardwood)
+                        SectionLabel(today?.dayType.title ?? "No plan")
                         Text(today?.dayType == .conditioning ? "Game day. Log your court session, or lift anyway below." : "Rest day. Recover, or pick a session below.")
                             .foregroundStyle(Theme.textSecondary)
                     }
                     .card()
                 }
-                Eyebrow("Or pick a day")
+                SectionLabel("Or pick a day")
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 10)], spacing: 10) {
                     ForEach(plan?.days.filter { $0.dayType == .lifting } ?? []) { day in
                         Button { start(day) } label: {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(day.title).font(.system(size: 14, weight: .bold, design: .rounded))
+                                Text(day.title).font(.system(size: 14, weight: .bold))
                                 Text("\(WeekMath.weekdayLong[day.weekday]) · \(day.exercises.count) exercises")
                                     .font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
                             }
@@ -123,7 +123,7 @@ struct ActiveSessionView: View {
                             onToggle: toggle, onChange: commit)
                     }
                     Button { showAddExercise = true } label: { Label("Add exercise", systemImage: "plus") }
-                        .buttonStyle(GhostButtonStyle())
+                        .buttonStyle(.bordered)
                         .popover(isPresented: $showAddExercise) {
                             ExercisePicker(exercises: allExercises) { exercise in
                                 sets.append(SessionSet(exerciseID: exercise.id, reps: 8, weightKg: 0))
@@ -156,23 +156,23 @@ struct ActiveSessionView: View {
             VStack(alignment: .leading, spacing: 4) {
                 TextField("Workout", text: $session.title)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 24, weight: .heavy, design: .rounded))
+                    .font(.system(size: 24, weight: .semibold))
                 Text(session.date.formatted(date: .abbreviated, time: .shortened)).foregroundStyle(Theme.textSecondary)
             }
             Spacer()
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 let elapsed = Int(context.date.timeIntervalSince(session.date))
-                ScoreboardStat(value: String(format: "%d:%02d", elapsed / 60, elapsed % 60), label: "Clock", color: Theme.textPrimary, size: 24)
+                StatView(value: String(format: "%d:%02d", elapsed / 60, elapsed % 60), label: "Clock", size: 24)
             }
-            ScoreboardStat(value: "\(done.count)/\(sets.count)", label: "Sets", color: Theme.scoreboard, size: 24)
-            ScoreboardStat(value: units.volume(volume), label: "Volume", color: Theme.paint, size: 24)
-            ScoreboardStat(value: "\(sets.filter { !$0.prKinds.isEmpty }.count)", label: "PRs", color: Theme.hardwood, size: 24)
+            StatView(value: "\(done.count)/\(sets.count)", label: "Sets", size: 24)
+            StatView(value: units.volume(volume), label: "Volume", size: 24)
+            StatView(value: "\(sets.filter { !$0.prKinds.isEmpty }.count)", label: "PRs", size: 24)
             Menu {
                 Button("Discard workout", role: .destructive) { confirmDiscard = true }
             } label: { Image(systemName: "ellipsis.circle") }
                 .menuStyle(.borderlessButton).fixedSize()
             Button { finish() } label: { Label("Finish", systemImage: "flag.checkered") }
-                .buttonStyle(HardwoodButtonStyle())
+                .buttonStyle(.borderedProminent)
                 .disabled(done.isEmpty)
         }
         .card()
@@ -207,7 +207,7 @@ struct ActiveSessionView: View {
         let volume = done.filter { !$0.isWarmup }.map { Double($0.reps) * $0.weightKg }.reduce(0, +)
         TrainingActions.finish(session, context: context)
         appModel.celebrate(.workoutComplete, title: session.title,
-                           detail: "\(done.count) sets · \(units.volume(volume)) · \(prs) PR\(prs == 1 ? "" : "s") · +\(XP.perWorkout + prs * XP.perPR) XP")
+                           detail: "\(done.count) sets · \(units.volume(volume)) · \(prs) PR\(prs == 1 ? "" : "s")")
     }
 }
 
@@ -229,13 +229,13 @@ struct ExerciseLogCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name).font(.system(size: 16, weight: .heavy, design: .rounded))
+                    Text(name).font(.system(size: 16, weight: .semibold))
                     Text(detail).font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
                 if let planned {
                     Text("\(planned.sets) × \(planned.repText) · rest \(planned.restSeconds / 60):\(String(format: "%02d", planned.restSeconds % 60))")
-                        .font(.system(size: 11, weight: .bold, design: .rounded).monospacedDigit())
+                        .font(.system(size: 11, weight: .bold).monospacedDigit())
                         .foregroundStyle(Theme.textSecondary)
                 }
             }
@@ -247,11 +247,11 @@ struct ExerciseLogCard: View {
                         .foregroundStyle(Theme.textSecondary)
                 }
                 if let suggestion, suggestion.kind != .firstTime || last.isEmpty {
-                    Label(suggestion.message, systemImage: suggestion.kind == .addWeight ? "arrow.up.circle.fill" : "lightbulb.fill")
-                        .font(.system(size: 11, weight: .semibold))
+                    Label(suggestion.message, systemImage: suggestion.kind == .addWeight ? "arrow.up.circle" : "lightbulb")
+                        .font(.system(size: 11, weight: .medium))
                         .padding(.horizontal, 8).padding(.vertical, 3)
-                        .foregroundStyle(suggestion.kind == .addWeight ? Theme.net : Theme.scoreboard)
-                        .background((suggestion.kind == .addWeight ? Theme.net : Theme.scoreboard).opacity(0.12), in: Capsule())
+                        .foregroundStyle(Theme.textPrimary)
+                        .background(Theme.surfaceRaised, in: Capsule())
                 }
             }
             VStack(spacing: 6) {
@@ -277,7 +277,7 @@ struct ExerciseLogCard: View {
             } label: { Label("Add set", systemImage: "plus") }
                 .buttonStyle(.plain)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.hardwood)
+                .foregroundStyle(Theme.accent)
         }
         .card(padding: 16)
     }
@@ -309,8 +309,8 @@ struct SetRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Text(set.isWarmup ? "W" : "\(number)")
-                .font(.system(size: 12, weight: .heavy, design: .rounded))
-                .foregroundStyle(set.isWarmup ? Theme.paint : Theme.textSecondary)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(set.isWarmup ? Theme.accent : Theme.textSecondary)
                 .frame(width: 22)
             TextField("Weight", value: weight, format: .number.precision(.fractionLength(0...1)))
                 .textFieldStyle(.roundedBorder)
@@ -326,18 +326,18 @@ struct SetRow: View {
                 .disabled(set.isDone)
             Text("reps").font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
             ForEach(set.prKinds, id: \.self) { kind in
-                Label(kind.title, systemImage: "trophy.fill")
-                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                Label(kind.title, systemImage: "trophy")
+                    .font(.system(size: 10, weight: .semibold))
                     .padding(.horizontal, 7).padding(.vertical, 3)
-                    .foregroundStyle(Theme.scoreboard)
-                    .background(Theme.scoreboard.opacity(0.15), in: Capsule())
+                    .foregroundStyle(Theme.accent)
+                    .background(Theme.accent.opacity(0.12), in: Capsule())
                     .transition(.scale.combined(with: .opacity))
             }
             Spacer()
             Button(action: onToggle) {
                 Image(systemName: set.isDone ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 24, weight: .medium))
-                    .foregroundStyle(set.isDone ? Theme.net : Theme.textSecondary)
+                    .foregroundStyle(set.isDone ? Theme.positive : Theme.textSecondary)
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
@@ -345,7 +345,7 @@ struct SetRow: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(set.isDone ? Theme.net.opacity(0.08) : Theme.surfaceRaised.opacity(0.6),
+        .background(Theme.surfaceRaised.opacity(set.isDone ? 0.35 : 0.7),
                     in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }

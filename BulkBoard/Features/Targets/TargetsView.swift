@@ -15,7 +15,7 @@ struct TargetsView: View {
         let snapshot = snapshot
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.spacing) {
-                PageHeader(eyebrow: "Targets", title: "Your numbers") {
+                PageHeader(title: "Targets", subtitle: "Daily calories and macros, and how they were calculated") {
                     Picker("Goal", selection: $profile.goalModeRaw) {
                         ForEach(GoalMode.allCases, id: \.self) { mode in
                             Label(mode.title, systemImage: mode.symbol).tag(mode.rawValue)
@@ -24,7 +24,7 @@ struct TargetsView: View {
                     .frame(width: 220)
                 }
 
-                TargetScoreboard(macros: snapshot.result.daily, size: 42)
+                MacroSummary(macros: snapshot.result.daily, size: 42)
 
                 ForEach(snapshot.result.warnings, id: \.self) { warning in
                     WarningBanner(message: warning.message, serious: warning.isSerious)
@@ -36,7 +36,7 @@ struct TargetsView: View {
                 HStack(alignment: .top, spacing: Theme.spacing) {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Eyebrow("Show the math")
+                            SectionLabel("Show the math")
                             Spacer()
                             if let latestWeight {
                                 Text("Using weigh-in \(units.weight(latestWeight.weightKg)) · \(latestWeight.date.monthDay)")
@@ -204,7 +204,7 @@ struct DayTargetEditor: View {
                 DayTypeBadge(dayType: dayType, large: true)
                 Spacer()
             }
-            Text("Custom targets").font(.system(size: 22, weight: .heavy, design: .rounded))
+            Text("Custom targets").font(.system(size: 22, weight: .semibold))
             Form {
                 NumberField(label: "Calories", value: $draft.kcal, unit: "kcal", decimals: 0)
                 NumberField(label: "Protein", value: $draft.protein, unit: "g", decimals: 0)
@@ -212,7 +212,7 @@ struct DayTargetEditor: View {
                 NumberField(label: "Fat", value: $draft.fat, unit: "g", decimals: 0)
                 LabeledContent("Macros add up to") {
                     Text("\(Fmt.int(draft.kcalFromMacros)) kcal")
-                        .foregroundStyle(abs(draft.kcalFromMacros - draft.kcal) > 50 ? Theme.rim : Theme.textSecondary)
+                        .foregroundStyle(abs(draft.kcalFromMacros - draft.kcal) > 50 ? Theme.negative : Theme.textSecondary)
                 }
             }
             .formStyle(.grouped)
@@ -220,14 +220,14 @@ struct DayTargetEditor: View {
                 Button("Balance carbs") {
                     draft.carbs = max(0, ((draft.kcal - draft.protein * 4 - draft.fat * 9) / 4).rounded())
                 }
-                .buttonStyle(GhostButtonStyle(compact: true))
+                .buttonStyle(.bordered).controlSize(.small)
                 Button("Use calculated") {
                     var overrides = profile.dayTargetOverrides
                     overrides[dayType] = nil
                     profile.dayTargetOverrides = overrides
                     dismiss()
                 }
-                .buttonStyle(GhostButtonStyle(compact: true))
+                .buttonStyle(.bordered).controlSize(.small)
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
                 Button("Save") {
@@ -236,7 +236,7 @@ struct DayTargetEditor: View {
                     profile.dayTargetOverrides = overrides
                     dismiss()
                 }
-                .buttonStyle(HardwoodButtonStyle(compact: true))
+                .buttonStyle(.borderedProminent).controlSize(.small)
                 .keyboardShortcut(.defaultAction)
             }
         }

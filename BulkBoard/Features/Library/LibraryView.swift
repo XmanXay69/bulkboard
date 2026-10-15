@@ -21,16 +21,16 @@ struct LibraryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            PageHeader(eyebrow: "Library", title: "Foods & Recipes") {
+            PageHeader(title: "Foods & Recipes", subtitle: "Built-in foods, your own foods, meals and shakes") {
                 HStack(spacing: 8) {
                     if tab == .meals {
                         Button { newRecipe(shake: true) } label: { Label("New shake", systemImage: "cup.and.saucer.fill") }
-                            .buttonStyle(GhostButtonStyle(compact: true))
+                            .buttonStyle(.bordered).controlSize(.small)
                         Button { newRecipe(shake: false) } label: { Label("New meal", systemImage: "plus") }
-                            .buttonStyle(HardwoodButtonStyle(compact: true))
+                            .buttonStyle(.borderedProminent).controlSize(.small)
                     } else {
                         Button { newFood() } label: { Label("New food", systemImage: "plus") }
-                            .buttonStyle(HardwoodButtonStyle(compact: true))
+                            .buttonStyle(.borderedProminent).controlSize(.small)
                             .keyboardShortcut("n", modifiers: [.command, .shift])
                     }
                 }
@@ -115,18 +115,18 @@ struct LibraryView: View {
             TableColumn("Food") { food in
                 HStack(spacing: 6) {
                     Text(food.name).fontWeight(.semibold)
-                    if !food.isBuiltIn { Text("MINE").font(.system(size: 9, weight: .heavy)).foregroundStyle(Theme.hardwood) }
+                    if !food.isBuiltIn { Text("MINE").font(.system(size: 9, weight: .semibold)).foregroundStyle(Theme.accent) }
                     if food.isAIEstimate { AIEstimateBadge() }
-                    if food.shakerSafe { Image(systemName: "cup.and.saucer.fill").font(.system(size: 10)).foregroundStyle(Theme.paint).help("Shaker-safe") }
+                    if food.shakerSafe { Image(systemName: "cup.and.saucer.fill").font(.system(size: 10)).foregroundStyle(Theme.accent).help("Shaker-safe") }
                 }
             }
             .width(min: 220, ideal: 280)
             TableColumn("Serving") { Text($0.servingLabel).foregroundStyle(Theme.textSecondary) }
                 .width(min: 120, ideal: 170)
-            TableColumn("kcal") { Text(Fmt.int($0.kcal)).monospacedDigit().foregroundStyle(Theme.kcal) }.width(56)
-            TableColumn("P") { Text(Fmt.number($0.protein)).monospacedDigit().foregroundStyle(Theme.protein) }.width(48)
-            TableColumn("C") { Text(Fmt.number($0.carbs)).monospacedDigit().foregroundStyle(Theme.carbs) }.width(48)
-            TableColumn("F") { Text(Fmt.number($0.fat)).monospacedDigit().foregroundStyle(Theme.fat) }.width(48)
+            TableColumn("kcal") { Text(Fmt.int($0.kcal)).monospacedDigit().foregroundStyle(Theme.textPrimary) }.width(56)
+            TableColumn("P") { Text(Fmt.number($0.protein)).monospacedDigit().foregroundStyle(Theme.textPrimary) }.width(48)
+            TableColumn("C") { Text(Fmt.number($0.carbs)).monospacedDigit().foregroundStyle(Theme.textPrimary) }.width(48)
+            TableColumn("F") { Text(Fmt.number($0.fat)).monospacedDigit().foregroundStyle(Theme.textPrimary) }.width(48)
             TableColumn("Aisle") { Text($0.section.title).foregroundStyle(Theme.textSecondary) }.width(min: 90, ideal: 110)
         }
         .contextMenu(forSelectionType: FoodRecord.ID.self) { ids in
@@ -186,11 +186,11 @@ struct RecipeCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: recipe.isShake ? "cup.and.saucer.fill" : "fork.knife")
-                    .foregroundStyle(recipe.isShake ? Theme.paint : Theme.hardwood)
-                Text(recipe.name).font(.system(size: 14, weight: .bold, design: .rounded)).foregroundStyle(Theme.textPrimary)
+                    .foregroundStyle(recipe.isShake ? Theme.accent : Theme.accent)
+                Text(recipe.name).font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.textPrimary)
                     .lineLimit(1)
                 Spacer()
-                if recipe.isFavorite { Image(systemName: "star.fill").foregroundStyle(Theme.scoreboard) }
+                if recipe.isFavorite { Image(systemName: "star.fill").foregroundStyle(Theme.textPrimary) }
             }
             HStack(spacing: 4) {
                 ForEach(MealSlot.allCases.filter(recipe.slots.contains), id: \.self) { slot in
@@ -201,7 +201,7 @@ struct RecipeCard: View {
                         .foregroundStyle(Theme.textSecondary)
                 }
                 if recipe.isShake {
-                    Text("Shaker-safe").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.paint)
+                    Text("Shaker-safe").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.accent)
                 }
             }
             MacroPill(macros: macros)

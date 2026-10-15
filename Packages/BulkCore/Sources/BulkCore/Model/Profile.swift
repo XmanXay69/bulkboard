@@ -96,7 +96,7 @@ public enum GoalMode: String, Codable, CaseIterable, Sendable {
     public var isGain: Bool { direction > 0 }
 }
 
-/// The kind of training day. Display names lean basketball.
+/// The kind of training day.
 public enum DayType: String, Codable, CaseIterable, Sendable {
     case lifting
     case conditioning
@@ -104,17 +104,17 @@ public enum DayType: String, Codable, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .lifting: "Practice Day"
-        case .conditioning: "Game Day"
-        case .rest: "Rest Day"
+        case .lifting: "Lift day"
+        case .conditioning: "Court day"
+        case .rest: "Rest day"
         }
     }
 
     public var subtitle: String {
         switch self {
         case .lifting: "Weight room"
-        case .conditioning: "Court conditioning"
-        case .rest: "Recovery + mobility"
+        case .conditioning: "Basketball / conditioning"
+        case .rest: "Recovery and mobility"
         }
     }
 

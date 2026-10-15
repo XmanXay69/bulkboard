@@ -17,7 +17,7 @@ struct GroceryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                PageHeader(eyebrow: "Grocery List", title: weekStart.map { "Week of \($0.monthDay)" } ?? "Groceries") {
+                PageHeader(title: "Grocery List", subtitle: weekStart.map { "From the meal plan for the week of \($0.monthDay)" }) {
                     HStack(spacing: 8) {
                         Menu {
                             Button("This week") { generate(Date.now) }
@@ -32,7 +32,7 @@ struct GroceryView: View {
                         .fixedSize()
                         .help("Build the list from the meal plan (⇧⌘G)")
                         Button { openWindow(id: "grocery") } label: { Label("Pop out", systemImage: "iphone") }
-                            .buttonStyle(GhostButtonStyle(compact: true))
+                            .buttonStyle(.bordered).controlSize(.small)
                             .help("Phone-sized check-off window")
                     }
                 }
@@ -47,10 +47,10 @@ struct GroceryView: View {
                         progress
                         Spacer()
                         Button { copy() } label: { Label(copied ? "Copied" : "Copy as text", systemImage: copied ? "checkmark" : "doc.on.doc") }
-                            .buttonStyle(GhostButtonStyle(compact: true))
+                            .buttonStyle(.bordered).controlSize(.small)
                             .keyboardShortcut("c", modifiers: [.command, .shift])
                         Button { exporting = true } label: { Label("Export .txt", systemImage: "square.and.arrow.up") }
-                            .buttonStyle(GhostButtonStyle(compact: true))
+                            .buttonStyle(.bordered).controlSize(.small)
                         Menu {
                             Button("Uncheck all") { GroceryActions.uncheckAll(context: context) }
                             Button("Remove checked items", role: .destructive) { GroceryActions.clearChecked(context: context) }
@@ -74,8 +74,8 @@ struct GroceryView: View {
     private var progress: some View {
         let done = items.filter(\.isChecked).count
         return HStack(spacing: 12) {
-            ScoreboardStat(value: "\(done)/\(items.count)", label: "In the cart", color: done == items.count ? Theme.net : Theme.scoreboard, size: 22)
-            XPBar(progress: items.isEmpty ? 0 : Double(done) / Double(items.count), height: 10, color: Theme.net)
+            StatView(value: "\(done)/\(items.count)", label: "In the cart", size: 22)
+            ProgressBar(progress: items.isEmpty ? 0 : Double(done) / Double(items.count), height: 10, color: Theme.positive)
                 .frame(width: 180)
         }
     }
@@ -117,10 +117,10 @@ struct GroceryListContent: View {
             ForEach(GroceryActions.grouped(items), id: \.section) { group in
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
-                        Image(systemName: group.section.symbol).foregroundStyle(Theme.hardwood)
-                        Eyebrow(group.section.title, color: Theme.textPrimary)
+                        Image(systemName: group.section.symbol).foregroundStyle(Theme.accent)
+                        SectionLabel(group.section.title, color: Theme.textPrimary)
                         Text("\(group.items.filter { !$0.isChecked }.count)")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(Theme.textSecondary)
                         Spacer()
                     }
@@ -140,7 +140,7 @@ struct GroceryListContent: View {
 
     private var addRow: some View {
         HStack(spacing: 8) {
-            Image(systemName: "plus.circle.fill").foregroundStyle(Theme.hardwood)
+            Image(systemName: "plus.circle.fill").foregroundStyle(Theme.accent)
             TextField("Add item", text: $newName)
                 .textFieldStyle(.plain)
                 .focused($nameFocused)
@@ -157,7 +157,7 @@ struct GroceryListContent: View {
                 .frame(width: 140)
             }
             Button("Add", action: add)
-                .buttonStyle(HardwoodButtonStyle(compact: true))
+                .buttonStyle(.borderedProminent).controlSize(.small)
                 .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
         }
         .padding(.horizontal, 12)
@@ -189,7 +189,7 @@ struct GroceryRow: View {
             HStack(spacing: 12) {
                 Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: compact ? 24 : 19, weight: .medium))
-                    .foregroundStyle(item.isChecked ? Theme.net : Theme.textSecondary)
+                    .foregroundStyle(item.isChecked ? Theme.positive : Theme.textSecondary)
                     .contentTransition(.symbolEffect(.replace))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(item.name)
@@ -201,11 +201,11 @@ struct GroceryRow: View {
                     }
                 }
                 Spacer()
-                if item.isManual { Text("ADDED").font(.system(size: 8, weight: .heavy)).foregroundStyle(Theme.textSecondary) }
+                if item.isManual { Text("ADDED").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.textSecondary) }
                 if !compact {
                     Text(item.amountText)
-                        .font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
-                        .foregroundStyle(item.isChecked ? Theme.textSecondary : Theme.scoreboard)
+                        .font(.system(size: 13, weight: .bold).monospacedDigit())
+                        .foregroundStyle(item.isChecked ? Theme.textSecondary : Theme.textPrimary)
                 }
             }
             .padding(.horizontal, 14)
@@ -232,13 +232,13 @@ struct GroceryPopoutView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Eyebrow("Grocery run", color: Theme.hardwood)
-                        Text("\(done) of \(items.count)").font(.scoreboard(26)).foregroundStyle(Theme.textPrimary)
+                        SectionLabel("Grocery run")
+                        Text("\(done) of \(items.count)").font(.stat(26)).foregroundStyle(Theme.textPrimary)
                     }
                     Spacer()
                     AppMark(size: 34)
                 }
-                XPBar(progress: items.isEmpty ? 0 : Double(done) / Double(items.count), height: 10, color: Theme.net)
+                ProgressBar(progress: items.isEmpty ? 0 : Double(done) / Double(items.count), height: 10, color: Theme.positive)
                 if items.isEmpty {
                     Text("Generate a list from the Grocery screen first.")
                         .foregroundStyle(Theme.textSecondary)

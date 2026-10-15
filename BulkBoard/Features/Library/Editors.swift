@@ -14,10 +14,10 @@ struct FoodEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(food.name.isEmpty ? "New food" : food.name).font(.system(size: 22, weight: .heavy, design: .rounded))
+                Text(food.name.isEmpty ? "New food" : food.name).font(.system(size: 22, weight: .semibold))
                 if food.isAIEstimate { AIEstimateBadge() }
                 Spacer()
-                if food.isBuiltIn { Text("Built-in").font(.eyebrow).foregroundStyle(Theme.textSecondary) }
+                if food.isBuiltIn { Text("Built-in").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary) }
             }
             Form {
                 Section("Food") {
@@ -66,13 +66,13 @@ struct FoodEditor: View {
             HStack {
                 if OllamaClient.shared.isAvailable {
                     Button { showAI = true } label: { Label("Estimate with AI", systemImage: "sparkles") }
-                        .buttonStyle(GhostButtonStyle(compact: true))
+                        .buttonStyle(.bordered).controlSize(.small)
                         .disabled(food.name.isEmpty)
                 }
                 Spacer()
                 Button("Cancel") { cancel() }.keyboardShortcut(.cancelAction)
                 Button("Save") { save() }
-                    .buttonStyle(HardwoodButtonStyle(compact: true))
+                    .buttonStyle(.borderedProminent).controlSize(.small)
                     .keyboardShortcut(.defaultAction)
                     .disabled(!isValid)
             }
@@ -123,12 +123,12 @@ struct RecipeEditor: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Image(systemName: recipe.isShake ? "cup.and.saucer.fill" : "fork.knife")
-                    .font(.system(size: 20)).foregroundStyle(recipe.isShake ? Theme.paint : Theme.hardwood)
+                    .font(.system(size: 20)).foregroundStyle(recipe.isShake ? Theme.accent : Theme.accent)
                 TextField("Name", text: $recipe.name)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 22, weight: .heavy, design: .rounded))
+                    .font(.system(size: 22, weight: .semibold))
             }
-            TargetScoreboard(macros: totals, size: 26)
+            MacroSummary(macros: totals, size: 26)
             HStack(spacing: 6) {
                 ForEach(MealSlot.allCases, id: \.self) { slot in
                     let on = recipe.slots.contains(slot)
@@ -141,7 +141,7 @@ struct RecipeEditor: View {
                             .font(.system(size: 12, weight: .semibold))
                             .padding(.horizontal, 10).padding(.vertical, 5)
                             .foregroundStyle(on ? .white : Theme.textPrimary)
-                            .background(on ? AnyShapeStyle(Theme.hardwood) : AnyShapeStyle(Theme.surfaceRaised), in: Capsule())
+                            .background(on ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.surfaceRaised), in: Capsule())
                     }
                     .buttonStyle(.plain)
                 }
@@ -151,7 +151,7 @@ struct RecipeEditor: View {
             if !unsafeForShaker.isEmpty {
                 WarningBanner(message: "Won't mix in a shaker bottle: \(unsafeForShaker.joined(separator: ", ")). Swap for a powder or liquid.", serious: true)
             }
-            Eyebrow("Ingredients")
+            SectionLabel("Ingredients")
             List {
                 ForEach(Array(ingredients.enumerated()), id: \.offset) { index, ingredient in
                     if let food = library.foodRecords[ingredient.foodID] {
@@ -166,7 +166,7 @@ struct RecipeEditor: View {
                                 .frame(width: 54).multilineTextAlignment(.trailing).textFieldStyle(.roundedBorder)
                             Text("×").foregroundStyle(Theme.textSecondary)
                             Button { ingredients.remove(at: index) } label: { Image(systemName: "minus.circle.fill") }
-                                .buttonStyle(.plain).foregroundStyle(Theme.rim)
+                                .buttonStyle(.plain).foregroundStyle(Theme.negative)
                         }
                     }
                 }
@@ -175,7 +175,7 @@ struct RecipeEditor: View {
             .frame(minHeight: 200)
             HStack {
                 Button { showAdd = true } label: { Label("Add ingredient", systemImage: "plus") }
-                    .buttonStyle(GhostButtonStyle(compact: true))
+                    .buttonStyle(.bordered).controlSize(.small)
                     .popover(isPresented: $showAdd) {
                         FoodSearchPicker(library: library, shakerOnly: recipe.isShake) { foodID in
                             ingredients.append(Ingredient(foodID: foodID, servings: 1))
@@ -194,7 +194,7 @@ struct RecipeEditor: View {
                     try? context.save()
                     dismiss()
                 }
-                .buttonStyle(HardwoodButtonStyle(compact: true))
+                .buttonStyle(.borderedProminent).controlSize(.small)
                 .keyboardShortcut(.defaultAction)
                 .disabled(recipe.name.trimmingCharacters(in: .whitespaces).isEmpty || ingredients.isEmpty)
             }
@@ -222,7 +222,7 @@ struct FoodSearchPicker: View {
         VStack(alignment: .leading, spacing: 8) {
             TextField("Search foods", text: $search).textFieldStyle(.roundedBorder)
             if shakerOnly {
-                Text("Shaker-safe only: powders and liquids.").font(.system(size: 11)).foregroundStyle(Theme.paint)
+                Text("Shaker-safe only: powders and liquids.").font(.system(size: 11)).foregroundStyle(Theme.accent)
             }
             List(foods) { food in
                 Button { onPick(food.id) } label: {

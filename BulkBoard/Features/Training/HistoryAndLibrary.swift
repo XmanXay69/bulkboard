@@ -48,7 +48,7 @@ struct TrainingHistoryView: View {
                     let courts = week.items.compactMap { if case let .court(s) = $0 { s } else { nil } }
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 16) {
-                            Eyebrow("Week of \(week.start.monthDay)", color: Theme.textPrimary)
+                            SectionLabel("Week of \(week.start.monthDay)", color: Theme.textPrimary)
                             Spacer()
                             Text("\(lifts.count) lifts · \(formatter.volume(lifts.map(\.volumeKg).reduce(0, +)))")
                             Text("\(courts.count) court · load \(courts.map(\.log.load).reduce(0, +))")
@@ -81,7 +81,7 @@ struct TrainingHistoryView: View {
                         Text((byExercise[id] ?? []).map { "\(formatter.weightValue($0.weightKg))×\($0.reps)" }.joined(separator: "  "))
                             .font(.system(size: 12, design: .monospaced)).foregroundStyle(Theme.textSecondary)
                         if (byExercise[id] ?? []).contains(where: { !$0.prKinds.isEmpty }) {
-                            Image(systemName: "trophy.fill").foregroundStyle(Theme.scoreboard)
+                            Image(systemName: "trophy.fill").foregroundStyle(Theme.textPrimary)
                         }
                     }
                 }
@@ -89,17 +89,17 @@ struct TrainingHistoryView: View {
             .padding(.top, 6)
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: "dumbbell.fill").foregroundStyle(Theme.hardwood).frame(width: 22)
+                Image(systemName: "dumbbell.fill").foregroundStyle(Theme.accent).frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(session.title).font(.system(size: 14, weight: .bold, design: .rounded))
+                    Text(session.title).font(.system(size: 14, weight: .bold))
                     Text(session.date.formatted(.dateTime.weekday(.wide).month().day()))
                         .font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
                 Text("\(session.sets.count) sets").foregroundStyle(Theme.textSecondary)
-                Text(formatter.volume(session.volumeKg)).font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit())
+                Text(formatter.volume(session.volumeKg)).font(.system(size: 13, weight: .bold).monospacedDigit())
                 if session.prCount > 0 {
-                    Label("\(session.prCount)", systemImage: "trophy.fill").foregroundStyle(Theme.scoreboard)
+                    Label("\(session.prCount)", systemImage: "trophy.fill").foregroundStyle(Theme.textPrimary)
                         .font(.system(size: 12, weight: .bold))
                 }
                 if session.isDemo { DemoBadge() }
@@ -116,15 +116,15 @@ struct TrainingHistoryView: View {
 
     private func courtRow(_ session: CourtSessionRecord) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: "basketball.fill").foregroundStyle(Theme.paint).frame(width: 22)
+            Image(systemName: "basketball.fill").foregroundStyle(Theme.accent).frame(width: 22)
             VStack(alignment: .leading, spacing: 1) {
-                Text(session.kind.title).font(.system(size: 14, weight: .bold, design: .rounded))
+                Text(session.kind.title).font(.system(size: 14, weight: .bold))
                 Text(session.date.formatted(.dateTime.weekday(.wide).month().day()) + (session.notes.isEmpty ? "" : " · \(session.notes)"))
                     .font(.system(size: 11)).foregroundStyle(Theme.textSecondary).lineLimit(1)
             }
             Spacer()
             Text("\(session.minutes) min · RPE \(session.rpe)").foregroundStyle(Theme.textSecondary)
-            Text("load \(session.log.load)").font(.system(size: 13, weight: .bold, design: .rounded).monospacedDigit()).foregroundStyle(Theme.paint)
+            Text("load \(session.log.load)").font(.system(size: 13, weight: .bold).monospacedDigit()).foregroundStyle(Theme.accent)
             if session.isDemo { DemoBadge() }
         }
         .card(padding: 12)
@@ -157,7 +157,7 @@ struct ExerciseLibraryView: View {
                     context.insert(exercise)
                     editing = exercise
                 } label: { Label("Custom exercise", systemImage: "plus") }
-                    .buttonStyle(HardwoodButtonStyle(compact: true))
+                    .buttonStyle(.borderedProminent).controlSize(.small)
             }
             .padding(.horizontal, 24)
             List {
@@ -170,7 +170,7 @@ struct ExerciseLibraryView: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         HStack(spacing: 6) {
                                             Text(exercise.name).font(.system(size: 13, weight: .semibold))
-                                            if !exercise.isBuiltIn { Text("CUSTOM").font(.system(size: 9, weight: .heavy)).foregroundStyle(Theme.hardwood) }
+                                            if !exercise.isBuiltIn { Text("CUSTOM").font(.system(size: 9, weight: .semibold)).foregroundStyle(Theme.accent) }
                                         }
                                         Text("\(exercise.equipment.title) · \(exercise.isCompound ? "Compound" : "Isolation") · rest \(exercise.defaultRestSeconds)s")
                                             .font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
@@ -179,8 +179,8 @@ struct ExerciseLibraryView: View {
                                     if let best = bests[exercise.id], best.heaviest > 0 {
                                         VStack(alignment: .trailing, spacing: 1) {
                                             Text("e1RM \(formatter.weight(best.e1RM, decimals: 0))")
-                                                .font(.system(size: 12, weight: .bold, design: .rounded).monospacedDigit())
-                                                .foregroundStyle(Theme.scoreboard)
+                                                .font(.system(size: 12, weight: .bold).monospacedDigit())
+                                                .foregroundStyle(Theme.textPrimary)
                                             Text("top \(formatter.weight(best.heaviest))").font(.system(size: 10)).foregroundStyle(Theme.textSecondary)
                                         }
                                     }
@@ -215,7 +215,7 @@ struct ExerciseEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(exercise.name.isEmpty ? "New exercise" : exercise.name).font(.system(size: 22, weight: .heavy, design: .rounded))
+            Text(exercise.name.isEmpty ? "New exercise" : exercise.name).font(.system(size: 22, weight: .semibold))
             Form {
                 TextField("Name", text: $exercise.name)
                 Picker("Muscle", selection: $exercise.muscleRaw) {
@@ -240,7 +240,7 @@ struct ExerciseEditor: View {
                     try? context.save()
                     dismiss()
                 }
-                .buttonStyle(HardwoodButtonStyle(compact: true))
+                .buttonStyle(.borderedProminent).controlSize(.small)
                 .keyboardShortcut(.defaultAction)
                 .disabled(exercise.name.trimmingCharacters(in: .whitespaces).isEmpty)
             }

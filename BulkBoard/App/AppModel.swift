@@ -3,16 +3,17 @@ import Foundation
 import Observation
 
 enum AppSection: String, CaseIterable, Identifiable, Hashable {
-    case dashboard, meals, grocery, training, progress, targets, library
+    case dashboard, meals, grocery, training, body, progress, targets, library
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .dashboard: "Dashboard"
+        case .dashboard: "Today"
         case .meals: "Meal Plan"
         case .grocery: "Grocery List"
         case .training: "Training"
+        case .body: "Body & Dunk"
         case .progress: "Progress"
         case .targets: "Targets"
         case .library: "Foods & Recipes"
@@ -21,17 +22,18 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
 
     var symbol: String {
         switch self {
-        case .dashboard: "rectangle.3.group.fill"
+        case .dashboard: "sun.max"
         case .meals: "fork.knife"
-        case .grocery: "cart.fill"
-        case .training: "dumbbell.fill"
+        case .grocery: "cart"
+        case .training: "dumbbell"
+        case .body: "figure.arms.open"
         case .progress: "chart.line.uptrend.xyaxis"
         case .targets: "target"
-        case .library: "books.vertical.fill"
+        case .library: "books.vertical"
         }
     }
 
-    /// ⌘1…⌘7
+    /// ⌘1…⌘8
     var shortcutKey: Character {
         Character(String((Self.allCases.firstIndex(of: self) ?? 0) + 1))
     }

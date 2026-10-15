@@ -34,8 +34,8 @@ struct MealPickerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: slot.symbol).foregroundStyle(Theme.hardwood)
-                Text("Pick a \(slot.title.lowercased())").font(.system(size: 15, weight: .bold, design: .rounded))
+                Image(systemName: slot.symbol).foregroundStyle(Theme.accent)
+                Text("Pick a \(slot.title.lowercased())").font(.system(size: 15, weight: .bold))
             }
             TextField("Search", text: $search).textFieldStyle(.roundedBorder)
             Picker("Show", selection: $scope) {
@@ -71,7 +71,7 @@ struct MealPickerView: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    if favorite { Image(systemName: "star.fill").font(.system(size: 9)).foregroundStyle(Theme.scoreboard) }
+                    if favorite { Image(systemName: "star.fill").font(.system(size: 9)).foregroundStyle(Theme.textPrimary) }
                     Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.textPrimary)
                     if badge { AIEstimateBadge() }
                 }
@@ -95,7 +95,7 @@ struct MealLibraryPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Eyebrow("Drag into the week")
+            SectionLabel("Drag into the week")
             TextField("Search meals", text: $search).textFieldStyle(.roundedBorder)
             List {
                 ForEach(MealSlot.allCases, id: \.self) { slot in

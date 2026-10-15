@@ -30,7 +30,6 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
-            CourtBackdrop(opacity: 0.07).ignoresSafeArea()
 
             VStack(spacing: 22) {
                 if step != .welcome { progress }
@@ -65,10 +64,10 @@ struct OnboardingView: View {
             ForEach(Step.allCases.dropFirst(), id: \.self) { item in
                 VStack(spacing: 6) {
                     Capsule()
-                        .fill(item.rawValue <= step.rawValue ? AnyShapeStyle(Theme.heroGradient) : AnyShapeStyle(Theme.surfaceRaised))
-                        .frame(height: 5)
-                    Text(item.title.uppercased())
-                        .font(.eyebrow).tracking(1)
+                        .fill(item.rawValue <= step.rawValue ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.surfaceRaised))
+                        .frame(height: 4)
+                    Text(item.title)
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(item == step ? Theme.textPrimary : Theme.textSecondary)
                 }
             }
@@ -80,20 +79,20 @@ struct OnboardingView: View {
     private var navigation: some View {
         HStack {
             Button("Back") { move(-1) }
-                .buttonStyle(GhostButtonStyle())
+                .buttonStyle(.bordered)
                 .keyboardShortcut(.cancelAction)
             Spacer()
             if step == .results {
                 Button {
                     ProfileActions.completeOnboarding(draft, context: context)
                 } label: {
-                    Label("Let's hoop", systemImage: "basketball.fill")
+                    Text("Get started")
                 }
-                .buttonStyle(HardwoodButtonStyle())
+                .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
             } else {
                 Button("Next") { move(1) }
-                    .buttonStyle(HardwoodButtonStyle())
+                    .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canAdvance)
                     .opacity(canAdvance ? 1 : 0.5)
@@ -121,30 +120,31 @@ struct OnboardingView: View {
     private var welcome: some View {
         VStack(spacing: 22) {
             Spacer(minLength: 60)
-            AppMark(size: 96)
-            VStack(spacing: 8) {
+            AppMark(size: 72)
+            VStack(spacing: 6) {
                 Text("BulkBoard")
-                    .font(.system(size: 52, weight: .black, design: .rounded))
+                    .font(.system(size: 34, weight: .bold))
                     .foregroundStyle(Theme.textPrimary)
-                Text("Eat big. Lift heavy. Keep your legs for the court.")
-                    .font(.system(size: 16, weight: .medium))
+                Text("Macros, meals, groceries, training and progress for your bulk.")
+                    .font(.system(size: 15))
                     .foregroundStyle(Theme.textSecondary)
             }
             VStack(alignment: .leading, spacing: 10) {
                 feature("target", "Calorie and macro targets that show their math")
                 feature("fork.knife", "A week of meals auto-filled to hit them")
-                feature("cart.fill", "Grocery list in one tap")
-                feature("dumbbell.fill", "Lifting + court conditioning plan with PR tracking")
-                feature("lock.fill", "Everything stays on this Mac")
+                feature("cart", "Grocery list in one click")
+                feature("dumbbell", "Lifting and conditioning plan with PR tracking")
+                feature("figure.arms.open", "Body measurements, weak-point focus and a dunk plan")
+                feature("lock", "Everything stays on this Mac")
             }
             .padding(.vertical, 8)
             HStack(spacing: 12) {
                 Button("Explore with demo data") {
                     DemoData.load(into: context)
                 }
-                .buttonStyle(GhostButtonStyle())
+                .buttonStyle(.bordered)
                 Button("Set up my plan") { step = .body }
-                    .buttonStyle(HardwoodButtonStyle())
+                    .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }
             Spacer(minLength: 40)
@@ -156,7 +156,7 @@ struct OnboardingView: View {
         Label {
             Text(text).font(.system(size: 14, weight: .medium)).foregroundStyle(Theme.textPrimary)
         } icon: {
-            Image(systemName: symbol).foregroundStyle(Theme.hardwood).frame(width: 22)
+            Image(systemName: symbol).foregroundStyle(Theme.textSecondary).frame(width: 22)
         }
     }
 
@@ -180,7 +180,7 @@ struct OnboardingView: View {
                             Stepper("\(draft.heightFeet) ft", value: $draft.heightFeet, in: 4...7)
                             Stepper("\(draft.heightInches) in", value: $draft.heightInches, in: 0...11)
                         }
-                        .font(.system(size: 14, weight: .semibold, design: .rounded).monospacedDigit())
+                        .font(.system(size: 14, weight: .semibold).monospacedDigit())
                     }
                 } else {
                     NumberField(label: "Height", value: $draft.heightCm, unit: "cm", decimals: 0)
@@ -212,8 +212,8 @@ struct OnboardingView: View {
                     DatePicker("Target date", selection: $draft.targetDate, in: Date.now.adding(days: 7)..., displayedComponents: .date)
                     LabeledContent("Planned rate") {
                         Text(rateText(preview.rate))
-                            .font(.system(size: 14, weight: .bold, design: .rounded).monospacedDigit())
-                            .foregroundStyle(Theme.hardwood)
+                            .font(.system(size: 14, weight: .bold).monospacedDigit())
+                            .foregroundStyle(Theme.accent)
                     }
                 }
                 .formStyle(.grouped)
@@ -240,7 +240,7 @@ struct OnboardingView: View {
             .formStyle(.grouped)
             .scrollDisabled(true)
             .scrollContentBackground(.hidden)
-            Eyebrow("Overall activity level")
+            SectionLabel("Overall activity level")
             VStack(spacing: 8) {
                 ForEach(ActivityLevel.allCases, id: \.self) { level in
                     ChoiceCard(title: "\(level.title) · ×\(Fmt.number(level.multiplier, maxDecimals: 3))", detail: level.detail,
@@ -256,7 +256,7 @@ struct OnboardingView: View {
     private var foodStep: some View {
         VStack(alignment: .leading, spacing: 18) {
             stepHeader("Anything you won't eat?", "Auto-fill skips meals with these. Shakes are always shaker-bottle friendly, no blender needed.")
-            Eyebrow("Allergies")
+            SectionLabel("Allergies")
             FlowLayout(spacing: 8) {
                 ForEach(Allergen.allCases, id: \.self) { allergen in
                     Chip(title: allergen.title, isOn: draft.allergens.contains(allergen)) {
@@ -264,7 +264,7 @@ struct OnboardingView: View {
                     }
                 }
             }
-            Eyebrow("Dislikes")
+            SectionLabel("Dislikes")
             TextField("e.g. salmon, mushrooms, cottage cheese", text: $draft.dislikesText, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(2...4)
@@ -277,13 +277,13 @@ struct OnboardingView: View {
         let preview = draft.preview
         return VStack(alignment: .leading, spacing: 18) {
             stepHeader("Here's your game plan", "\(draft.mode.title) · \(rateText(preview.rate))")
-            TargetScoreboard(macros: preview.daily)
+            MacroSummary(macros: preview.daily)
             DayTypeTargetsRow(targets: preview.byDayType, schedule: preview.schedule)
             ForEach(preview.warnings, id: \.self) { warning in
                 WarningBanner(message: warning.message, serious: warning.isSerious)
             }
             VStack(alignment: .leading, spacing: 8) {
-                Eyebrow("The math")
+                SectionLabel("The math")
                 MathBreakdownView(steps: preview.steps)
             }
             .card()
@@ -294,7 +294,7 @@ struct OnboardingView: View {
 
     private func stepHeader(_ title: String, _ subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.system(size: 28, weight: .heavy, design: .rounded)).foregroundStyle(Theme.textPrimary)
+            Text(title).font(.system(size: 28, weight: .semibold)).foregroundStyle(Theme.textPrimary)
             Text(subtitle).font(.system(size: 14)).foregroundStyle(Theme.textSecondary)
         }
     }
@@ -306,7 +306,7 @@ struct OnboardingView: View {
     }
 }
 
-/// Three compact cards: Practice Day, Game Day, Rest Day targets.
+/// One card per day type: lift, court and rest day targets.
 struct DayTypeTargetsRow: View {
     var targets: [DayType: Macros]
     var schedule: [DayType: Int]
@@ -321,20 +321,20 @@ struct DayTypeTargetsRow: View {
                         HStack {
                             DayTypeBadge(dayType: dayType)
                             Spacer()
-                            Text("\(schedule[dayType, default: 0])×/wk").font(.eyebrow).foregroundStyle(Theme.textSecondary)
+                            Text("\(schedule[dayType, default: 0])×/wk").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
                         }
                         HStack(alignment: .firstTextBaseline, spacing: 3) {
-                            Text(Fmt.int(macros.kcal)).font(.scoreboard(26)).foregroundStyle(Theme.textPrimary)
-                            Text("kcal").font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(Theme.textSecondary)
+                            Text(Fmt.int(macros.kcal)).font(.stat(26)).foregroundStyle(Theme.textPrimary)
+                            Text("kcal").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.textSecondary)
                         }
                         MacroPill(macros: macros)
                         if let onEdit {
                             HStack {
                                 if overridden.contains(dayType) {
-                                    Text("Custom").font(.eyebrow).foregroundStyle(Theme.scoreboard)
+                                    Text("Custom").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textPrimary)
                                 }
                                 Spacer()
-                                Button("Edit") { onEdit(dayType) }.buttonStyle(GhostButtonStyle(compact: true))
+                                Button("Edit") { onEdit(dayType) }.buttonStyle(.bordered).controlSize(.small)
                             }
                         }
                     }

@@ -39,7 +39,6 @@ struct BulkBoardApp: App {
             GroceryPopoutView()
                 .environment(appModel)
                 .preferredColorScheme(appearance.colorScheme)
-                .tint(Theme.hardwood)
         }
         .modelContainer(container)
         .defaultSize(width: 390, height: 780)

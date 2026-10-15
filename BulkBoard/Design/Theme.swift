@@ -2,55 +2,29 @@ import AppKit
 import BulkCore
 import SwiftUI
 
-/// Design tokens. Court-inspired: deep navy floor, hardwood orange, scoreboard amber.
+/// Design tokens. Neutral surfaces, one accent, and two status colors used sparingly.
 enum Theme {
-    // Brand
-    static let hardwood = Color(hex: 0xF07A2A)
-    static let hardwoodDeep = Color(hex: 0xC4561A)
-    static let scoreboard = Color(light: 0xB87A00, dark: 0xFFB224)
-    static let net = Color(hex: 0x2FC48D)
-    static let rim = Color(hex: 0xEF4F55)
-    static let paint = Color(hex: 0x4D8EFF)
+    static let accent = Color(light: 0x2563EB, dark: 0x4C8DFF)
+    static let positive = Color(light: 0x15803D, dark: 0x32D74B)
+    static let negative = Color(light: 0xDC2626, dark: 0xFF6961)
 
-    // Macros: brighter on dark surfaces, deeper on light ones so small text stays readable.
-    static let kcal = Color(light: 0xB27500, dark: 0xFFB224)
-    static let protein = Color(light: 0xD0581C, dark: 0xF07A2A)
-    static let carbs = Color(light: 0x2A6FD0, dark: 0x4D8EFF)
-    static let fat = Color(light: 0x0F8A7E, dark: 0x2EC4B6)
+    static let background = Color(light: 0xF5F5F7, dark: 0x161618)
+    static let surface = Color(light: 0xFFFFFF, dark: 0x1F1F22)
+    static let surfaceRaised = Color(light: 0xEEEEF1, dark: 0x2A2A2E)
+    static let sidebar = Color(light: 0xECECEF, dark: 0x1A1A1D)
+    static let stroke = Color(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.08, darkAlpha: 0.08)
+    static let textPrimary = Color(light: 0x1D1D1F, dark: 0xF2F2F4)
+    static let textSecondary = Color(light: 0x6E6E73, dark: 0x9A9AA0)
 
-    // Surfaces
-    static let background = Color(light: 0xF6F2EC, dark: 0x0A1020)
-    static let surface = Color(light: 0xFFFFFF, dark: 0x121A2E)
-    static let surfaceRaised = Color(light: 0xF0EBE3, dark: 0x1A2440)
-    static let sidebar = Color(light: 0xEDE6DC, dark: 0x070C18)
-    static let stroke = Color(light: 0x0E1726, dark: 0xFFFFFF, lightAlpha: 0.08, darkAlpha: 0.08)
-    static let textPrimary = Color(light: 0x0E1726, dark: 0xF2F4F8)
-    static let textSecondary = Color(light: 0x5A6478, dark: 0x9AA6BF)
-
-    static let cornerRadius: CGFloat = 16
+    static let cornerRadius: CGFloat = 12
     static let spacing: CGFloat = 20
-
-    static func color(for dayType: DayType) -> Color {
-        switch dayType {
-        case .lifting: hardwood
-        case .conditioning: paint
-        case .rest: net
-        }
-    }
-
-    static var heroGradient: LinearGradient {
-        LinearGradient(colors: [hardwood, hardwoodDeep], startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
 }
 
 extension Font {
-    /// Big, heavy, monospaced-digit numerals for scoreboard stats.
-    static func scoreboard(_ size: CGFloat) -> Font {
-        .system(size: size, weight: .heavy, design: .rounded).monospacedDigit()
+    /// Numbers that matter: semibold with tabular digits.
+    static func stat(_ size: CGFloat) -> Font {
+        .system(size: size, weight: .semibold).monospacedDigit()
     }
-
-    /// Small uppercase label above a section.
-    static let eyebrow = Font.system(size: 11, weight: .bold, design: .rounded)
 }
 
 extension Color {
@@ -76,7 +50,7 @@ extension Color {
 }
 
 enum AppearancePreference: String, CaseIterable, Identifiable {
-    case dark, light, system
+    case system, light, dark
 
     var id: String { rawValue }
     var title: String { rawValue.capitalized }
