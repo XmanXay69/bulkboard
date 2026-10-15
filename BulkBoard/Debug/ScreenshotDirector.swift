@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Launch-argument driven screen capture, used for README screenshots and smoke-checking screens.
 ///
-///     open BulkBoard.app --args --in-memory --demo --capture=<dir> [--sections=dashboard,meals] [--onboarding] [--size=1440x900] [--quit]
+///     open BulkBoard.app --args --in-memory --demo --capture=<dir> [--sections=dashboard,meals] [--onboarding] [--size=1440x900] [--full-page] [--quit]
 ///
 /// Values use `--key=value`: a bare path argument makes AppKit treat it as a file to open and skip the main window.
 /// Renders each screen with AppKit's `cacheDisplay`, so it needs no Screen Recording permission.
@@ -79,13 +79,30 @@ enum ScreenshotDirector {
         window.center()
     }
 
+    /// The tallest scrollable page in the window, for whole-page captures.
+    private static func largestScrollDocument(in root: NSView) -> NSView? {
+        var best: NSView?
+        func visit(_ view: NSView) {
+            if let scroll = view as? NSScrollView, let document = scroll.documentView,
+               document.bounds.height > (best?.bounds.height ?? 0), scroll.bounds.width > 600 {
+                best = document
+            }
+            view.subviews.forEach(visit)
+        }
+        visit(root)
+        return best
+    }
+
     private static var mainWindow: NSWindow? {
         NSApp.windows.first { $0.isVisible && $0.canBecomeMain }
     }
 
     private static func capture(to url: URL) async {
         try? await Task.sleep(for: .milliseconds(1200))
-        guard let window = mainWindow, let view = window.contentView?.superview ?? window.contentView else { return }
+        guard let window = mainWindow, var view = window.contentView?.superview ?? window.contentView else { return }
+        if arguments.contains("--full-page"), let document = largestScrollDocument(in: view) {
+            view = document
+        }
         let bounds = view.bounds
         guard let rep = view.bitmapImageRepForCachingDisplay(in: bounds) else { return }
         view.cacheDisplay(in: bounds, to: rep)

@@ -131,7 +131,7 @@ enum DemoData {
                         if planned.repLow == planned.repHigh {
                             // Power work holds load steady.
                         } else if current.reps < planned.repHigh {
-                            current.reps += 1
+                            if chance(&rng, 0.55) { current.reps += 1 }
                         } else if current.weightLb > 0 {
                             current = (current.weightLb + (current.weightLb >= 100 ? 5 : 2.5), planned.repLow)
                         }

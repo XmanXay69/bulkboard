@@ -175,6 +175,12 @@ public enum MealPlanner {
             var cost = 0.0
             for (index, meal) in meals.enumerated() {
                 guard let meal, day.locked[index] == nil else { continue }
+                // Keep portions believable: a snack shouldn't be a third of the day.
+                if day.target.kcal > 0 {
+                    let share = (byID[meal.candidateID]?.macros.kcal ?? 0) * meal.servings / day.target.kcal
+                    let excess = max(0, share - day.slots[index].maxDailyShare)
+                    cost += 30 * excess * excess
+                }
                 counts[meal.candidateID, default: 0] += 1
                 let used = usage[meal.candidateID, default: 0] + counts[meal.candidateID, default: 0]
                 if used > options.maxRepeatsPerWeek { cost += 0.5 }

@@ -76,6 +76,12 @@ struct SeedLibraryTests {
             for plan in MealPlanner.planWeek(days, candidates: candidates, seed: 11) {
                 #expect(abs(plan.totals.kcal - kcal) / kcal < 0.06, "\(kcal) kcal day landed at \(plan.totals.kcal)")
                 #expect(plan.totals.protein >= target.protein * 0.9)
+                for (index, meal) in plan.meals.enumerated() {
+                    guard let meal else { continue }
+                    let slot = MealSlot.defaultDay[index]
+                    let mealKcal = (candidates.first { $0.id == meal.candidateID }?.macros.kcal ?? 0) * meal.servings
+                    #expect(mealKcal / kcal < slot.maxDailyShare + 0.06, "\(slot) is \(Int(mealKcal)) of \(Int(kcal)) kcal")
+                }
             }
         }
     }

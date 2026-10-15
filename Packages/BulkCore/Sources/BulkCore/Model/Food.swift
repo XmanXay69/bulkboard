@@ -186,6 +186,17 @@ public enum MealSlot: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// Soft cap on how much of the day's calories one meal in this slot should carry.
+    public var maxDailyShare: Double {
+        switch self {
+        case .breakfast: 0.30
+        case .lunch: 0.35
+        case .dinner: 0.38
+        case .snack: 0.18
+        case .shake: 0.25
+        }
+    }
+
     /// Default daily structure: three meals, a snack and a shake.
     public static let defaultDay: [MealSlot] = [.breakfast, .lunch, .snack, .dinner, .shake]
 }

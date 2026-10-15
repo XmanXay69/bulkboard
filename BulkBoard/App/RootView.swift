@@ -48,8 +48,8 @@ struct MainView: View {
         case .library: LibraryView()
         case .grocery: GroceryView()
         case .training: TrainingView(profile: profile)
-        default:
-            EmptyStateView(symbol: section.symbol, title: section.title, message: "Coming up next.")
+        case .dashboard: DashboardView(profile: profile)
+        case .progress: ProgressScreen(profile: profile)
         }
     }
 }
@@ -82,6 +82,7 @@ struct SidebarView: View {
             }
 
             Spacer()
+            PlayerCard(profile: profile)
             SidebarFooter()
         }
         .padding(.horizontal, 10)
@@ -128,7 +129,40 @@ struct SidebarButton: View {
     }
 }
 
-/// Placeholder footer until progress stats land; shows local-only reassurance.
+/// Level, XP and streak at the bottom of the sidebar.
+struct PlayerCard: View {
+    var profile: ProfileRecord
+    @Query(sort: \WeightRecord.date) private var weights: [WeightRecord]
+    @Query private var intake: [IntakeRecord]
+    @Query private var sessions: [WorkoutSessionRecord]
+    @Query private var court: [CourtSessionRecord]
+    @Query(sort: \WorkoutPlanRecord.createdAt, order: .reverse) private var plans: [WorkoutPlanRecord]
+
+    var body: some View {
+        let stats = ProgressService.stats(profile: profile, weights: weights, intake: intake, sessions: sessions,
+                                          court: court, plan: plans.first)
+        let level = stats.level
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("LV \(level.level)").font(.scoreboard(18)).foregroundStyle(Theme.scoreboard)
+                Spacer()
+                Label("\(stats.currentStreak)", systemImage: "flame.fill")
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Theme.hardwood)
+                    .help("Days in a row on your macros")
+            }
+            XPBar(progress: Double(level.into) / Double(level.needed), height: 8)
+            Text("\(level.into) / \(level.needed) XP").font(.system(size: 10, weight: .medium).monospacedDigit())
+                .foregroundStyle(Theme.textSecondary)
+        }
+        .padding(12)
+        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.stroke))
+        .padding(.bottom, 8)
+    }
+}
+
+/// Local-only reassurance.
 struct SidebarFooter: View {
     var body: some View {
         Label("All data stays on this Mac", systemImage: "lock.fill")
