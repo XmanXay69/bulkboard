@@ -32,6 +32,7 @@ enum DemoData {
         addWeighIns(from: start, to: today, rng: &rng, context: context)
         addTraining(from: start, to: today, rng: &rng, context: context)
         addIntake(from: start, to: today, profile: profile, rng: &rng, context: context)
+        addCheckIns(today: today, context: context)
 
         GroceryActions.generate(weekOf: today, context: context)
         for item in context.fetchAll(GroceryItemRecord.self).sorted(by: { $0.sortIndex < $1.sortIndex }).prefix(7) {
@@ -58,6 +59,10 @@ enum DemoData {
         purge(WeightRecord.self) { $0.isDemo }
         purge(FoodRecord.self) { $0.isDemo }
         purge(RecipeRecord.self) { $0.isDemo }
+        for record in context.fetchAll(BodyCheckInRecord.self) where record.isDemo {
+            if let photo = record.photoFilename { PhotoStore.delete(photo) }
+            context.delete(record)
+        }
         try? context.save()
     }
 
@@ -192,7 +197,28 @@ enum DemoData {
         }
     }
 
+    /// Two tape check-ins eight weeks apart (inches converted to cm). Calves lag; the dunk is about 3 in away.
+    private static func addCheckIns(today: Date, context: ModelContext) {
+        func inches(_ value: Double) -> Double { value * 2.54 }
+        let earlier = BodyMeasurements(
+            heightCm: inches(74), weightKg: Units.kg(fromLb: 181.5), wingspanCm: inches(77), wristCm: 17.8,
+            neckCm: inches(15.5), shouldersCm: inches(47), chestCm: inches(41), waistCm: inches(31.5), hipsCm: inches(38.5),
+            armCm: inches(14.5), forearmCm: inches(12), thighCm: inches(23), calfCm: inches(13.5),
+            standingVerticalCm: inches(22), approachTouchCm: inches(121), canPalmBall: false)
+        let recent = BodyMeasurements(
+            heightCm: inches(74), weightKg: Units.kg(fromLb: 186), wingspanCm: inches(77), wristCm: 17.8,
+            neckCm: inches(15.75), shouldersCm: inches(48.25), chestCm: inches(42.25), waistCm: inches(32.25), hipsCm: inches(39),
+            armCm: inches(15.25), forearmCm: inches(12.25), thighCm: inches(23.75), calfCm: inches(13.75),
+            standingVerticalCm: inches(23.5), approachTouchCm: inches(123), canPalmBall: false)
+        for (offset, measurements) in [(-56, earlier), (-3, recent)] {
+            let record = BodyCheckInRecord(date: today.dayStart.adding(days: offset).addingTimeInterval(8 * 3600))
+            record.measurements = measurements
+            context.insert(record)
+        }
+    }
+
     private static func markAllDemo(_ context: ModelContext) {
+        for record in context.fetchAll(BodyCheckInRecord.self) { record.isDemo = true }
         context.profile?.isDemo = true
         for record in context.fetchAll(PlanEntryRecord.self) { record.isDemo = true }
         for record in context.fetchAll(IntakeRecord.self) { record.isDemo = true }

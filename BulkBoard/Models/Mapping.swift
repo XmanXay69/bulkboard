@@ -50,6 +50,11 @@ extension ProfileRecord {
         set { mealSlotsRaw = newValue.map(\.rawValue) }
     }
 
+    var focusMuscles: Set<MuscleGroup> {
+        get { Set(focusMusclesRaw.compactMap(MuscleGroup.init(rawValue:))) }
+        set { focusMusclesRaw = MuscleGroup.allCases.filter(newValue.contains).map(\.rawValue) }
+    }
+
     var macroSettings: MacroSettings {
         let defaults = goalMode.defaultMacroSettings
         return MacroSettings(proteinPerLb: proteinPerLbOverride ?? defaults.proteinPerLb,
@@ -246,6 +251,13 @@ extension CourtSessionRecord {
     var log: CourtSessionLog { CourtSessionLog(date: date, kind: kind, minutes: minutes, rpe: rpe) }
 }
 
+extension BodyCheckInRecord {
+    var measurements: BodyMeasurements? {
+        get { measurementsData.isEmpty ? nil : Blob.decode(BodyMeasurements?.self, from: measurementsData, default: nil) }
+        set { measurementsData = newValue.map { Blob.encode($0) } ?? Data() }
+    }
+}
+
 extension WeightRecord {
     var point: WeightPoint { WeightPoint(date: date, kg: weightKg) }
 }
@@ -261,6 +273,12 @@ extension ModelContext {
 
     var workoutPlan: WorkoutPlanRecord? {
         fetchAll(WorkoutPlanRecord.self, sortBy: [SortDescriptor(\.createdAt, order: .reverse)]).first
+    }
+
+    var latestCheckIn: BodyCheckInRecord? {
+        var descriptor = FetchDescriptor<BodyCheckInRecord>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+        descriptor.fetchLimit = 1
+        return (try? fetch(descriptor))?.first
     }
 
     var latestWeightKg: Double? {

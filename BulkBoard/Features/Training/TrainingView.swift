@@ -178,6 +178,13 @@ struct DayPlanCard: View {
                             Text(exercises[planned.exerciseID]?.name ?? "Exercise")
                                 .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textPrimary)
                                 .lineLimit(1)
+                            if let note = planned.note {
+                                Text(note)
+                                    .font(.system(size: 9, weight: .medium))
+                                    .padding(.horizontal, 5).padding(.vertical, 1)
+                                    .foregroundStyle(Theme.accent)
+                                    .background(Theme.accent.opacity(0.1), in: Capsule())
+                            }
                             Spacer()
                             Text("\(planned.sets) × \(planned.repText)")
                                 .font(.system(size: 12, weight: .bold).monospacedDigit())

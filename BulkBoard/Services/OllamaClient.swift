@@ -28,6 +28,25 @@ final class OllamaClient {
         set { withMutation(keyPath: \.model) { UserDefaults.standard.set(newValue, forKey: "ollamaModel") } }
     }
 
+    /// Name fragments of Ollama models that accept images.
+    static let visionHints = ["vision", "llava", "bakllava", "gemma3", "qwen2.5vl", "qwen2.5-vl", "qwen3-vl", "qwen3vl",
+                              "minicpm-v", "moondream", "llama4", "mistral-small3", "granite3.2-vision"]
+
+    var visionModels: [String] {
+        models.filter { name in Self.visionHints.contains { name.lowercased().contains($0) } }
+    }
+
+    var visionModel: String {
+        get {
+            access(keyPath: \.visionModel)
+            let saved = UserDefaults.standard.string(forKey: "ollamaVisionModel") ?? ""
+            return visionModels.contains(saved) ? saved : visionModels.first ?? ""
+        }
+        set { withMutation(keyPath: \.visionModel) { UserDefaults.standard.set(newValue, forKey: "ollamaVisionModel") } }
+    }
+
+    var canSeeImages: Bool { isAvailable && !visionModel.isEmpty }
+
     private let session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 120
@@ -60,13 +79,15 @@ final class OllamaClient {
         }
     }
 
-    func chat(system: String, prompt: String, json: Bool = false) async throws -> String {
-        guard isAvailable, !model.isEmpty else { throw OllamaError.unavailable }
+    func chat(system: String, prompt: String, json: Bool = false, images: [Data]? = nil, model chosenModel: String? = nil) async throws -> String {
+        let useModel = chosenModel ?? model
+        guard isAvailable, !useModel.isEmpty else { throw OllamaError.unavailable }
         var request = URLRequest(url: Self.baseURL.appendingPathComponent("api/chat"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body = ChatRequest(model: model,
-                               messages: [.init(role: "system", content: system), .init(role: "user", content: prompt)],
+        let body = ChatRequest(model: useModel,
+                               messages: [.init(role: "system", content: system),
+                                          .init(role: "user", content: prompt, images: images?.map { $0.base64EncodedString() })],
                                stream: false, format: json ? "json" : nil, options: .init(temperature: json ? 0.1 : 0.6))
         request.httpBody = try JSONEncoder().encode(body)
         let (data, response) = try await session.data(for: request)
@@ -112,6 +133,24 @@ final class OllamaClient {
         return try await chat(system: system, prompt: meal)
     }
 
+    /// Reviews a physique photo with a local vision model. The photo goes only to 127.0.0.1.
+    func reviewPhysique(photo: Data, context: String) async throws -> PhysiqueReview {
+        guard canSeeImages else { throw OllamaError.noVisionModel }
+        let system = """
+        You are a strength coach reviewing a physique photo for muscle balance, to decide what to train harder. \
+        Be direct and respectful. Don't comment on attractiveness, skin, face or anything other than muscle development. \
+        If the photo doesn't clearly show a person's physique, say so in observations and leave the lists empty. \
+        Reply with JSON only: {"lagging": [up to 3 of: chest, shoulders, back, arms, forearms, legs, calves, core], \
+        "strengths": [same names], "observations": [2-4 short sentences]}.
+        """
+        let text = try await chat(system: system, prompt: "Measurements and analysis so far:\n\(context)\nWhat looks underdeveloped relative to the rest?",
+                                  json: true, images: [photo], model: visionModel)
+        guard let data = text.data(using: .utf8), let review = try? JSONDecoder().decode(PhysiqueReview.self, from: data) else {
+            throw OllamaError.unreadable
+        }
+        return review
+    }
+
     // MARK: Wire types
 
     private struct TagsResponse: Decodable {
@@ -120,7 +159,11 @@ final class OllamaClient {
     }
 
     private struct ChatRequest: Encodable {
-        struct Message: Codable { var role: String; var content: String }
+        struct Message: Codable {
+            var role: String
+            var content: String
+            var images: [String]?
+        }
         struct Options: Encodable { var temperature: Double }
         var model: String
         var messages: [Message]
@@ -145,14 +188,26 @@ nonisolated struct MacroEstimate: Codable, Equatable {
     var macros: Macros { Macros(kcal: kcal, protein: protein, carbs: carbs, fat: fat) }
 }
 
+/// What a vision model said about a photo. Always shown as an AI opinion, never as fact.
+nonisolated struct PhysiqueReview: Codable, Equatable {
+    var lagging: [String]
+    var strengths: [String]
+    var observations: [String]
+
+    var laggingParts: [BodyPart] { lagging.compactMap(BodyPart.matching) }
+    var mentionsCore: Bool { lagging.contains { $0.lowercased().contains("core") || $0.lowercased().contains("abs") } }
+}
+
 enum OllamaError: LocalizedError {
     case unavailable
+    case noVisionModel
     case badStatus(Int, String)
     case unreadable
 
     var errorDescription: String? {
         switch self {
         case .unavailable: "Ollama isn't running. Start it (ollama serve) and pull a model, e.g. ollama pull llama3.2."
+        case .noVisionModel: "No vision model installed. Run: ollama pull llama3.2-vision (or gemma3)."
         case let .badStatus(code, body): "Ollama returned \(code). \(body.prefix(200))"
         case .unreadable: "The model's answer wasn't usable. Try again or rephrase."
         }

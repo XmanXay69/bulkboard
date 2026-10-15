@@ -9,7 +9,8 @@ enum TrainingActions {
         let plan = WorkoutPlanRecord()
         plan.liftingDays = profile.liftingDays
         plan.courtDays = profile.courtDays
-        plan.days = SplitGenerator.generate(liftingDays: profile.liftingDays, courtDays: profile.courtDays, mode: profile.goalMode)
+        plan.days = SplitGenerator.generate(liftingDays: profile.liftingDays, courtDays: profile.courtDays, mode: profile.goalMode,
+                                            focus: profile.focusMuscles, dunk: profile.dunkGoal)
         plan.isDemo = profile.isDemo
         context.insert(plan)
     }

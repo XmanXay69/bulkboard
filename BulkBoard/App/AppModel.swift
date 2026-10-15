@@ -39,6 +39,11 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
+enum BodyTab: String, CaseIterable {
+    case physique = "Physique"
+    case dunk = "Dunk"
+}
+
 enum TrainingTab: String, CaseIterable {
     case week = "This Week"
     case log = "Log"
@@ -75,6 +80,7 @@ final class AppModel {
     var groceryRequest: Date?
     var showMealLibrary = false
     var trainingTab: TrainingTab = .week
+    var bodyTab: BodyTab = .physique
     var celebration: Celebration?
     var activeSheet: ActiveSheet?
     var hasProfile = false

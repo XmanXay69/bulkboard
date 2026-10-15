@@ -36,6 +36,27 @@ struct UnitFormatter {
     }
 
     var plateIncrement: Double { Units.plateIncrement(in: system) }
+
+    var lengthUnit: String { system == .imperial ? "in" : "cm" }
+
+    func lengthValue(_ cm: Double) -> Double { system == .imperial ? cm / 2.54 : cm }
+
+    func cm(fromDisplay value: Double) -> Double { system == .imperial ? value * 2.54 : value }
+
+    func length(_ cm: Double, decimals: Int = 1) -> String {
+        "\(Fmt.number(lengthValue(cm), maxDecimals: decimals)) \(lengthUnit)"
+    }
+
+    /// Heights like a rim or a reach: 10′0″ or 305 cm.
+    func tall(_ cm: Double) -> String {
+        switch system {
+        case .imperial:
+            let inches = Int((cm / 2.54).rounded())
+            return "\(inches / 12)′\(inches % 12)″"
+        case .metric:
+            return "\(Int(cm.rounded())) cm"
+        }
+    }
 }
 
 extension Date {

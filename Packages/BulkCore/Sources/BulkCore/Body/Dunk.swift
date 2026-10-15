@@ -108,10 +108,13 @@ public enum DunkCalculator {
 
         var projected: Double?
         var powerIncrease: Double?
-        if let power, let goal = input.goalWeightKg {
-            projected = jump(fromPower: power, massKg: goal) * approachFactor
-            let needed = sayersPower(jumpCm: requiredJump / approachFactor, massKg: goal)
-            powerIncrease = max(0, needed / power - 1)
+        if let goal = input.goalWeightKg {
+            // Start from today's jump so measured and estimated numbers never disagree.
+            projected = current.map { $0 - lossPerKg * (goal - input.weightKg) }
+            if let power {
+                let needed = sayersPower(jumpCm: requiredJump / approachFactor, massKg: goal)
+                powerIncrease = max(0, needed / power - 1)
+            }
         }
 
         var gap: Double?
@@ -120,7 +123,7 @@ public enum DunkCalculator {
         if let current {
             let shortBy = requiredJump - current
             gap = shortBy
-            let inches = shortBy / 2.54
+            let inches = shortBy / 2.54 - 1e-9
             verdict = inches <= 0 ? .canDunk : inches <= 3 ? .close : inches <= 8 ? .reachable : .longTerm
             if shortBy > 0 {
                 let base = weeksToGain(shortBy)

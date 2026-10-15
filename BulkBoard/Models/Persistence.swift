@@ -8,7 +8,7 @@ nonisolated enum BulkBoardSchemaV1: VersionedSchema {
         [
             ProfileRecord.self, FoodRecord.self, RecipeRecord.self, PlanEntryRecord.self,
             IntakeRecord.self, GroceryItemRecord.self, ExerciseRecord.self, WorkoutPlanRecord.self,
-            WorkoutSessionRecord.self, CourtSessionRecord.self, WeightRecord.self,
+            WorkoutSessionRecord.self, CourtSessionRecord.self, WeightRecord.self, BodyCheckInRecord.self,
         ]
     }
 }
@@ -27,7 +27,15 @@ enum Persistence {
         return dir
     }
 
-    static var storeURL: URL { appSupportDirectory.appendingPathComponent("BulkBoard.store") }
+    /// `--store=/path/to/file.store` points the app at another store (used to test migrations).
+    static var storeURL: URL {
+        if let path = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--store=") })?.dropFirst("--store=".count) {
+            return URL(fileURLWithPath: String(path))
+        }
+        return appSupportDirectory.appendingPathComponent("BulkBoard.store")
+    }
+
+    static var usesCustomStore: Bool { ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("--store=") } }
 
     /// True when running under XCTest or a launch argument asks for a throwaway store.
     static var usesInMemoryStore: Bool {

@@ -140,6 +140,13 @@ struct DunkTests {
         #expect(report.powerIncreaseNeededAtGoal! > 0.05)
     }
 
+    @Test func projectionStartsFromTheMeasuredJump() {
+        var input = guardBuild
+        input.approachTouchCm = 312.4
+        let report = DunkCalculator.report(input)
+        #expect(abs(report.projectedJumpAtGoalCm! - (report.currentJumpCm! - 5.4 * report.jumpLossPerKgCm)) < 1e-6)
+    }
+
     @Test func timelineGrowsWithTheGap() {
         #expect(DunkCalculator.weeksToGain(1.27 * 8) == 8)
         var small = guardBuild

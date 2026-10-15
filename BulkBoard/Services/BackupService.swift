@@ -22,6 +22,8 @@ nonisolated struct BackupDocument: Codable {
     var sessions: [Session] = []
     var courtSessions: [Court] = []
     var weights: [Weight] = []
+    /// Added in 0.2. Measurements and AI notes; photos stay on disk and aren't embedded.
+    var checkIns: [CheckIn]?
 
     struct Profile: Codable {
         var id: UUID, createdAt: Date, age: Int, sex: String, heightCm: Double, weightKg: Double, goalWeightKg: Double
@@ -29,6 +31,7 @@ nonisolated struct BackupDocument: Codable {
         var dislikes: [String], allergens: [String], unitSystem: String
         var proteinPerLbOverride: Double?, fatPercentOverride: Double?, weeklyRateOverrideKg: Double?
         var dayTargetOverrides: Data?, mealSlots: [String], isDemo: Bool
+        var focusMuscles: [String]?, dunkGoal: Bool?
     }
 
     struct Food: Codable {
@@ -79,6 +82,10 @@ nonisolated struct BackupDocument: Codable {
     struct Weight: Codable {
         var id: UUID, date: Date, weightKg: Double, note: String, isDemo: Bool
     }
+
+    struct CheckIn: Codable {
+        var id: UUID, date: Date, measurements: BodyMeasurements?, photoFilename: String?, aiNotes: String?, aiModel: String?, isDemo: Bool
+    }
 }
 
 enum BackupService {
@@ -105,7 +112,8 @@ enum BackupService {
                                 goalMode: p.goalModeRaw, liftingDays: p.liftingDays, courtDays: p.courtDays, dislikes: p.dislikes,
                                 allergens: p.allergensRaw, unitSystem: p.unitSystemRaw, proteinPerLbOverride: p.proteinPerLbOverride,
                                 fatPercentOverride: p.fatPercentOverride, weeklyRateOverrideKg: p.weeklyRateOverrideKg,
-                                dayTargetOverrides: p.dayTargetOverridesData, mealSlots: p.mealSlotsRaw, isDemo: p.isDemo)
+                                dayTargetOverrides: p.dayTargetOverridesData, mealSlots: p.mealSlotsRaw, isDemo: p.isDemo,
+                                focusMuscles: p.focusMusclesRaw, dunkGoal: p.dunkGoal)
         }
         doc.foods = context.fetchAll(FoodRecord.self).map {
             .init(id: $0.id, seedKey: $0.seedKey, name: $0.name, brand: $0.brand, servingLabel: $0.servingLabel, servingAmount: $0.servingAmount,
@@ -149,6 +157,10 @@ enum BackupService {
         doc.weights = context.fetchAll(WeightRecord.self).map {
             .init(id: $0.id, date: $0.date, weightKg: $0.weightKg, note: $0.note, isDemo: $0.isDemo)
         }
+        doc.checkIns = context.fetchAll(BodyCheckInRecord.self).map {
+            .init(id: $0.id, date: $0.date, measurements: $0.measurements, photoFilename: $0.photoFilename,
+                  aiNotes: $0.aiNotes, aiModel: $0.aiModel, isDemo: $0.isDemo)
+        }
         return doc
     }
 
@@ -182,6 +194,7 @@ enum BackupService {
             r.allergensRaw = p.allergens; r.unitSystemRaw = p.unitSystem; r.proteinPerLbOverride = p.proteinPerLbOverride
             r.fatPercentOverride = p.fatPercentOverride; r.weeklyRateOverrideKg = p.weeklyRateOverrideKg
             r.dayTargetOverridesData = p.dayTargetOverrides; r.mealSlotsRaw = p.mealSlots; r.isDemo = p.isDemo
+            r.focusMusclesRaw = p.focusMuscles ?? []; r.dunkGoal = p.dunkGoal ?? false
             context.insert(r)
         }
         for f in doc.foods {
@@ -244,6 +257,12 @@ enum BackupService {
             r.id = w.id; r.note = w.note; r.isDemo = w.isDemo
             context.insert(r)
         }
+        for c in doc.checkIns ?? [] {
+            let r = BodyCheckInRecord(date: c.date)
+            r.id = c.id; r.measurements = c.measurements; r.photoFilename = c.photoFilename; r.aiNotes = c.aiNotes
+            r.aiModel = c.aiModel; r.isDemo = c.isDemo
+            context.insert(r)
+        }
         SeedService.ensureBuiltIns(context) // backfill anything a newer version ships
         try? context.save()
     }
@@ -261,7 +280,16 @@ enum BackupService {
         try? context.delete(model: WorkoutSessionRecord.self)
         try? context.delete(model: CourtSessionRecord.self)
         try? context.delete(model: WeightRecord.self)
+        try? context.delete(model: BodyCheckInRecord.self)
         try? context.save()
+    }
+
+    /// Removes every stored progress photo (used by Reset all data).
+    static func deletePhotos() {
+        let folder = PhotoStore.directory
+        for file in (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] {
+            try? FileManager.default.removeItem(at: file)
+        }
     }
 
     // MARK: Files
@@ -289,7 +317,7 @@ enum BackupService {
 
     /// Daily automatic backup, skipped for throwaway stores.
     static func autoBackupIfNeeded(_ context: ModelContext) {
-        guard autoBackupEnabled, !Persistence.usesInMemoryStore, context.profile != nil else { return }
+        guard autoBackupEnabled, !Persistence.usesInMemoryStore, !Persistence.usesCustomStore, context.profile != nil else { return }
         let last = UserDefaults.standard.double(forKey: "lastBackup")
         guard Date.now.timeIntervalSince1970 - last > 20 * 3600 else { return }
         _ = try? writeBackup(context)

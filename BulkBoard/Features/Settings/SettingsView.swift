@@ -158,7 +158,7 @@ struct DataSettings: View {
             } header: {
                 Text("Backups")
             } footer: {
-                Text("Keeps the 14 most recent. Backups contain your health data. They stay on this Mac unless you move them.")
+                Text("Keeps the 14 most recent. Backups contain your health data and measurements; progress photos stay in the Photos folder and aren't included.")
             }
             Section("Export & import") {
                 HStack {
@@ -188,6 +188,7 @@ struct DataSettings: View {
             Button("Back up and reset", role: .destructive) {
                 if context.profile != nil { _ = try? BackupService.writeBackup(context) }
                 BackupService.deleteAll(context)
+                BackupService.deletePhotos()
                 SeedService.ensureBuiltIns(context)
             }
         } message: {

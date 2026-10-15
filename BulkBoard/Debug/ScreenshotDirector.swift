@@ -41,6 +41,14 @@ enum ScreenshotDirector {
                 ?? AppSection.allCases
             for (index, section) in sections.enumerated() {
                 appModel.section = section
+                if section == .body {
+                    for tab in BodyTab.allCases {
+                        appModel.bodyTab = tab
+                        await capture(to: directory.appendingPathComponent(String(format: "%02d-body-%@.png", index + 1, tab.rawValue.lowercased())))
+                    }
+                    appModel.bodyTab = .physique
+                    continue
+                }
                 if section == .training {
                     for tab in TrainingTab.allCases {
                         appModel.trainingTab = tab

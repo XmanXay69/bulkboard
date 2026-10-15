@@ -30,6 +30,10 @@ final class ProfileRecord {
     /// JSON `[String: Macros]` keyed by `DayType.rawValue`; manual per-day-type target overrides.
     var dayTargetOverridesData: Data?
     var mealSlotsRaw: [String] = MealSlot.defaultDay.map(\.rawValue)
+    /// Muscle groups getting extra volume (`MuscleGroup.rawValue`).
+    var focusMusclesRaw: [String] = []
+    /// Adds jump training to the plan.
+    var dunkGoal: Bool = false
     var isDemo: Bool = false
 
     init() {}
@@ -223,5 +227,23 @@ final class WeightRecord {
     init(date: Date, weightKg: Double) {
         self.date = date
         self.weightKg = weightKg
+    }
+}
+
+/// A body check-in: tape measurements, jump numbers, an optional photo and any AI notes.
+@Model
+final class BodyCheckInRecord {
+    var id: UUID = UUID()
+    var date: Date = Date()
+    /// JSON `BodyMeasurements`.
+    var measurementsData: Data = Data()
+    /// File name inside the Photos folder; the image itself never goes in the database.
+    var photoFilename: String?
+    var aiNotes: String?
+    var aiModel: String?
+    var isDemo: Bool = false
+
+    init(date: Date) {
+        self.date = date
     }
 }
