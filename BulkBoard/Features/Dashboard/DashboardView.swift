@@ -17,10 +17,6 @@ struct DashboardView: View {
     @Query private var foods: [FoodRecord]
     @Query private var recipes: [RecipeRecord]
 
-    @State private var showWeighIn = false
-    @State private var showQuickAdd = false
-    @State private var showCourt = false
-    @State private var showCoach = false
 
     private var today: Date { Date.now.dayStart }
     private var units: UnitFormatter { UnitFormatter(system: profile.unitSystem) }
@@ -43,16 +39,16 @@ struct DashboardView: View {
                     TodayWorkoutCard(day: plannedDay, sessions: sessions, court: court) {
                         appModel.section = .training
                         appModel.trainingTab = .log
-                    } onLogCourt: { showCourt = true }
+                    } onLogCourt: { appModel.activeSheet = .court(minutes: plannedDay?.block?.minutes ?? 60, kind: .conditioning) }
                         .frame(width: 360)
                 }
                 HStack(alignment: .top, spacing: Theme.spacing) {
                     TodayMealsCard(entries: entries.filter { $0.day == today }.sorted { $0.slotIndex < $1.slotIndex },
-                                   intake: todaysIntake, library: library, target: target, onQuickAdd: { showQuickAdd = true }) {
+                                   intake: todaysIntake, library: library, target: target, onQuickAdd: { appModel.activeSheet = .quickAdd }) {
                         appModel.section = .meals
                     }
                     VStack(spacing: Theme.spacing) {
-                        WeightTrendCard(stats: stats, profile: profile, units: units) { showWeighIn = true }
+                        WeightTrendCard(stats: stats, profile: profile, units: units) { appModel.activeSheet = .weighIn }
                         StreakCard(stats: stats)
                     }
                     .frame(width: 360)
@@ -61,12 +57,6 @@ struct DashboardView: View {
             .padding(24)
             .background(Theme.background)
         }
-        .sheet(isPresented: $showWeighIn) { WeighInSheet(units: profile.unitSystem, last: weights.last?.weightKg) }
-        .sheet(isPresented: $showQuickAdd) { QuickAddSheet(library: library) }
-        .sheet(isPresented: $showCourt) {
-            CourtSessionSheet(minutes: plannedDay?.block?.minutes ?? 60, kind: .conditioning)
-        }
-        .sheet(isPresented: $showCoach) { AskCoachSheet(profile: profile) }
     }
 
     private func header(dayType: DayType, stats: ProgressStats) -> some View {
@@ -85,15 +75,13 @@ struct DashboardView: View {
             Spacer()
             HStack(spacing: 8) {
                 if OllamaClient.shared.isAvailable {
-                    Button { showCoach = true } label: { Label("Ask the coach", systemImage: "sparkles") }
+                    Button { appModel.activeSheet = .coach } label: { Label("Ask the coach", systemImage: "sparkles") }
                         .buttonStyle(GhostButtonStyle(compact: true))
-                        .keyboardShortcut("a", modifiers: [.command, .shift])
                 }
-                Button { showWeighIn = true } label: { Label("Weigh-in", systemImage: "scalemass.fill") }
+                Button { appModel.activeSheet = .weighIn } label: { Label("Weigh-in", systemImage: "scalemass.fill") }
                     .buttonStyle(GhostButtonStyle(compact: true))
-                Button { showQuickAdd = true } label: { Label("Quick add food", systemImage: "plus") }
+                Button { appModel.activeSheet = .quickAdd } label: { Label("Quick add food", systemImage: "plus") }
                     .buttonStyle(HardwoodButtonStyle(compact: true))
-                    .keyboardShortcut("e", modifiers: [.command, .shift])
             }
         }
     }

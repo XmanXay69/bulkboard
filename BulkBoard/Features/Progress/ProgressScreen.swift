@@ -5,6 +5,7 @@ import SwiftUI
 
 struct ProgressScreen: View {
     @Environment(\.modelContext) private var context
+    @Environment(AppModel.self) private var appModel
     var profile: ProfileRecord
     @Query(sort: \WeightRecord.date) private var weights: [WeightRecord]
     @Query private var intake: [IntakeRecord]
@@ -14,7 +15,6 @@ struct ProgressScreen: View {
     @Query(sort: \ExerciseRecord.name) private var exercises: [ExerciseRecord]
 
     @State private var range: ChartRange = .twelveWeeks
-    @State private var showWeighIn = false
     @State private var showWeighInTable = false
 
     enum ChartRange: String, CaseIterable {
@@ -43,9 +43,8 @@ struct ProgressScreen: View {
                             ForEach(ChartRange.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                         }
                         .pickerStyle(.segmented).labelsHidden().frame(width: 150)
-                        Button { showWeighIn = true } label: { Label("Log weigh-in", systemImage: "scalemass.fill") }
+                        Button { appModel.activeSheet = .weighIn } label: { Label("Log weigh-in", systemImage: "scalemass.fill") }
                             .buttonStyle(HardwoodButtonStyle(compact: true))
-                            .keyboardShortcut("w", modifiers: [.command, .shift])
                     }
                 }
 
@@ -82,7 +81,6 @@ struct ProgressScreen: View {
             .padding(24)
             .background(Theme.background)
         }
-        .sheet(isPresented: $showWeighIn) { WeighInSheet(units: profile.unitSystem, last: weights.last?.weightKg) }
     }
 }
 

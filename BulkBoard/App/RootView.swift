@@ -16,8 +16,18 @@ struct RootView: View {
         }
         .frame(minWidth: 1100, minHeight: 700)
         .tint(Theme.hardwood)
+        .onChange(of: profiles.isEmpty, initial: true) { appModel.hasProfile = !profiles.isEmpty }
+        .overlay(alignment: .top) {
+            if let error = appModel.startupError {
+                WarningBanner(message: error, serious: true)
+                    .frame(maxWidth: 640)
+                    .padding(.top, 8)
+                    .onTapGesture { appModel.startupError = nil }
+            }
+        }
         .task {
             SeedService.ensureBuiltIns(context)
+            BackupService.autoBackupIfNeeded(context)
             await OllamaClient.shared.refresh()
             await ScreenshotDirector.run(appModel: appModel, context: context)
         }
@@ -26,9 +36,11 @@ struct RootView: View {
 
 struct MainView: View {
     @Environment(AppModel.self) private var appModel
+    @Environment(\.modelContext) private var context
     var profile: ProfileRecord
 
     var body: some View {
+        @Bindable var appModel = appModel
         HStack(spacing: 0) {
             SidebarView(profile: profile)
                 .frame(width: 224)
@@ -38,6 +50,14 @@ struct MainView: View {
                 .pageBackground()
         }
         .overlay { CelebrationOverlay() }
+        .sheet(item: $appModel.activeSheet) { sheet in
+            switch sheet {
+            case .weighIn: WeighInSheet(units: profile.unitSystem, last: context.latestWeightKg)
+            case .quickAdd: QuickAddSheet(library: MealLibrary(context))
+            case let .court(minutes, kind): CourtSessionSheet(minutes: minutes, kind: kind)
+            case .coach: AskCoachSheet(profile: profile)
+            }
+        }
     }
 
     @ViewBuilder

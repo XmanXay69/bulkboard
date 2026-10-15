@@ -35,7 +35,6 @@ struct WorkoutLoggerView: View {
                             .foregroundStyle(Theme.textSecondary)
                         Button { start(today) } label: { Label("Start today's workout", systemImage: "play.fill") }
                             .buttonStyle(HardwoodButtonStyle())
-                            .keyboardShortcut("l", modifiers: [.command, .shift])
                     }
                     .card()
                 } else {

@@ -7,16 +7,16 @@ enum Theme {
     // Brand
     static let hardwood = Color(hex: 0xF07A2A)
     static let hardwoodDeep = Color(hex: 0xC4561A)
-    static let scoreboard = Color(hex: 0xFFB224)
+    static let scoreboard = Color(light: 0xB87A00, dark: 0xFFB224)
     static let net = Color(hex: 0x2FC48D)
     static let rim = Color(hex: 0xEF4F55)
     static let paint = Color(hex: 0x4D8EFF)
 
-    // Macros
-    static let kcal = Color(hex: 0xFFB224)
-    static let protein = Color(hex: 0xF07A2A)
-    static let carbs = Color(hex: 0x4D8EFF)
-    static let fat = Color(hex: 0x2EC4B6)
+    // Macros: brighter on dark surfaces, deeper on light ones so small text stays readable.
+    static let kcal = Color(light: 0xB27500, dark: 0xFFB224)
+    static let protein = Color(light: 0xD0581C, dark: 0xF07A2A)
+    static let carbs = Color(light: 0x2A6FD0, dark: 0x4D8EFF)
+    static let fat = Color(light: 0x0F8A7E, dark: 0x2EC4B6)
 
     // Surfaces
     static let background = Color(light: 0xF6F2EC, dark: 0x0A1020)

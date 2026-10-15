@@ -10,13 +10,6 @@ struct TrainingView: View {
     @Query(sort: \ExerciseRecord.name) private var exercises: [ExerciseRecord]
     @Query(sort: \WorkoutPlanRecord.createdAt, order: .reverse) private var plans: [WorkoutPlanRecord]
     @Query(sort: \CourtSessionRecord.date, order: .reverse) private var courtSessions: [CourtSessionRecord]
-    @State private var courtSheet: CourtSheetRequest?
-
-    struct CourtSheetRequest: Identifiable {
-        let id = UUID()
-        var minutes: Int
-        var kind: CourtSessionKind
-    }
 
     private var exerciseLookup: [UUID: ExerciseRecord] {
         Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -35,11 +28,10 @@ struct TrainingView: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .frame(width: 360)
-                    Button { courtSheet = CourtSheetRequest(minutes: 60, kind: .pickup) } label: {
+                    Button { appModel.activeSheet = .court(minutes: 60, kind: .pickup) } label: {
                         Label("Log hoops", systemImage: "basketball.fill")
                     }
                     .buttonStyle(GhostButtonStyle(compact: true))
-                    .keyboardShortcut("b", modifiers: [.command, .shift])
                     .help("Log a basketball session (⇧⌘B)")
                 }
             }
@@ -52,7 +44,7 @@ struct TrainingView: View {
                              exercises: exerciseLookup) { day in
                     start(day)
                 } onLogCourt: { day in
-                    courtSheet = CourtSheetRequest(minutes: day.block?.minutes ?? 60, kind: day.title.contains("Pickup") ? .pickup : .conditioning)
+                    appModel.activeSheet = .court(minutes: day.block?.minutes ?? 60, kind: day.title.contains("Pickup") ? .pickup : .conditioning)
                 }
             case .log:
                 WorkoutLoggerView(profile: profile, plan: plans.first, sessions: sessions, exercises: exerciseLookup,
@@ -63,9 +55,6 @@ struct TrainingView: View {
             case .exercises:
                 ExerciseLibraryView(exercises: exercises, sessions: sessions, units: profile.unitSystem)
             }
-        }
-        .sheet(item: $courtSheet) { request in
-            CourtSessionSheet(minutes: request.minutes, kind: request.kind)
         }
     }
 

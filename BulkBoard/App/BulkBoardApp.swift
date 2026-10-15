@@ -9,6 +9,10 @@ struct BulkBoardApp: App {
     private let container: ModelContainer
 
     init() {
+        // `--appearance=light|dark|system` overrides the saved preference for this run only (screenshots, testing).
+        if let override = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--appearance=") })?.split(separator: "=").last {
+            UserDefaults.standard.setVolatileDomain(["appearance": String(override)], forName: UserDefaults.argumentDomain)
+        }
         let model = AppModel()
         do {
             container = try Persistence.makeContainer()
@@ -29,6 +33,7 @@ struct BulkBoardApp: App {
         .modelContainer(container)
         .defaultSize(width: 1280, height: 840)
         .windowToolbarStyle(.unified)
+        .commands { BulkBoardCommands(appModel: appModel, container: container) }
 
         Window("Grocery Run", id: "grocery") {
             GroceryPopoutView()
@@ -39,5 +44,12 @@ struct BulkBoardApp: App {
         .modelContainer(container)
         .defaultSize(width: 390, height: 780)
         .windowResizability(.contentMinSize)
+
+        Settings {
+            SettingsView()
+                .environment(appModel)
+                .preferredColorScheme(appearance.colorScheme)
+        }
+        .modelContainer(container)
     }
 }

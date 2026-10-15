@@ -1,3 +1,4 @@
+import BulkCore
 import Foundation
 import Observation
 
@@ -43,6 +44,23 @@ enum TrainingTab: String, CaseIterable {
     case exercises = "Exercises"
 }
 
+/// Sheets any screen or menu command can open.
+enum ActiveSheet: Identifiable, Equatable {
+    case weighIn
+    case quickAdd
+    case court(minutes: Int, kind: CourtSessionKind)
+    case coach
+
+    var id: String {
+        switch self {
+        case .weighIn: "weighIn"
+        case .quickAdd: "quickAdd"
+        case .court: "court"
+        case .coach: "coach"
+        }
+    }
+}
+
 /// App-wide UI state: navigation, sheets, and transient banners.
 @Observable
 final class AppModel {
@@ -56,6 +74,8 @@ final class AppModel {
     var showMealLibrary = false
     var trainingTab: TrainingTab = .week
     var celebration: Celebration?
+    var activeSheet: ActiveSheet?
+    var hasProfile = false
     let restTimer = RestTimer()
 
     func celebrate(_ kind: Celebration.Kind, title: String, detail: String) {
