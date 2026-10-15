@@ -258,6 +258,8 @@ struct DayTypeBadge: View {
         Label(dayType.title.uppercased(), systemImage: dayType.symbol)
             .font(.system(size: large ? 13 : 10, weight: .heavy, design: .rounded))
             .tracking(1)
+            .lineLimit(1)
+            .fixedSize()
             .padding(.horizontal, large ? 12 : 8)
             .padding(.vertical, large ? 6 : 4)
             .foregroundStyle(Theme.color(for: dayType))

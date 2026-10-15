@@ -87,6 +87,13 @@ public enum OverloadAdvisor {
         let worstReps = atTop.map(\.reps).min() ?? 0
         let last = "\(Fmt.number(top)) × \(bestReps)"
 
+        if repLow == repHigh && repHigh <= 5 {
+            // Plyos and med-ball throws: the point is speed, not load.
+            let message = top > 0
+                ? "Power work: \(repHigh) fast reps at \(Fmt.number(top)). Speed over load."
+                : "Power work: \(repHigh) explosive reps per set. Quality over quantity."
+            return OverloadSuggestion(kind: .repeatWeight, weight: top, targetReps: repHigh, message: message)
+        }
         if top == 0 {
             // Bodyweight movement: progress with reps.
             return OverloadSuggestion(kind: .addReps, weight: 0, targetReps: bestReps + 1,

@@ -36,6 +36,13 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
+enum TrainingTab: String, CaseIterable {
+    case week = "This Week"
+    case log = "Log"
+    case history = "History"
+    case exercises = "Exercises"
+}
+
 /// App-wide UI state: navigation, sheets, and transient banners.
 @Observable
 final class AppModel {
@@ -47,4 +54,11 @@ final class AppModel {
     /// Set to a week start to ask the grocery screen to rebuild from that week's plan.
     var groceryRequest: Date?
     var showMealLibrary = false
+    var trainingTab: TrainingTab = .week
+    var celebration: Celebration?
+    let restTimer = RestTimer()
+
+    func celebrate(_ kind: Celebration.Kind, title: String, detail: String) {
+        celebration = Celebration(kind: kind, title: title, detail: detail)
+    }
 }

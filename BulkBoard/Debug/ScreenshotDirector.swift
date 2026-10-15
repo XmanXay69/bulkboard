@@ -41,11 +41,31 @@ enum ScreenshotDirector {
                 ?? AppSection.allCases
             for (index, section) in sections.enumerated() {
                 appModel.section = section
+                if section == .training {
+                    for tab in TrainingTab.allCases {
+                        appModel.trainingTab = tab
+                        if tab == .log { startSampleSession(context) }
+                        await capture(to: directory.appendingPathComponent(String(format: "%02d-training-%@.png", index + 1, tab.rawValue.lowercased().replacingOccurrences(of: " ", with: "-"))))
+                    }
+                    appModel.trainingTab = .week
+                    continue
+                }
                 await capture(to: directory.appendingPathComponent(String(format: "%02d-%@.png", index + 1, section.rawValue)))
             }
         }
 
         if arguments.contains("--quit") { NSApp.terminate(nil) }
+    }
+
+    /// A half-finished session so the logger screenshot shows previous performance, suggestions and PRs.
+    private static func startSampleSession(_ context: ModelContext) {
+        guard TrainingActions.activeSession(context) == nil,
+              let day = context.workoutPlan?.day(for: .now).flatMap({ $0.dayType == .lifting ? $0 : nil })
+                ?? context.workoutPlan?.days.first(where: { $0.dayType == .lifting }) else { return }
+        let session = TrainingActions.startSession(from: day, on: .now.addingTimeInterval(-23 * 60), context: context)
+        for set in session.sets.prefix(5) {
+            TrainingActions.setDone(set.id, done: true, in: session, context: context)
+        }
     }
 
     private static func resizeWindow() {

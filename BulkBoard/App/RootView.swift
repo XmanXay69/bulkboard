@@ -37,6 +37,7 @@ struct MainView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .pageBackground()
         }
+        .overlay { CelebrationOverlay() }
     }
 
     @ViewBuilder
@@ -46,6 +47,7 @@ struct MainView: View {
         case .meals: MealPlanView(profile: profile)
         case .library: LibraryView()
         case .grocery: GroceryView()
+        case .training: TrainingView(profile: profile)
         default:
             EmptyStateView(symbol: section.symbol, title: section.title, message: "Coming up next.")
         }

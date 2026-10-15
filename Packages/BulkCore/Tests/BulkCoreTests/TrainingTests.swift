@@ -95,6 +95,15 @@ struct OverloadTests {
         #expect(bodyweight.targetReps == 10)
     }
 
+    @Test func powerWorkNeverChasesWeight() {
+        let medBall = OverloadAdvisor.suggest(lastSession: [(5, 12), (5, 12), (5, 12)], repLow: 5, repHigh: 5, increment: 5, unit: "lb")
+        #expect(medBall.kind == .repeatWeight)
+        #expect(medBall.weight == 12)
+        let boxJump = OverloadAdvisor.suggest(lastSession: [(3, 0), (3, 0)], repLow: 3, repHigh: 3, increment: 5, unit: "lb")
+        #expect(boxJump.targetReps == 3)
+        #expect(boxJump.message.hasPrefix("Power work"))
+    }
+
     @Test func metricIncrementRounding() {
         let suggestion = OverloadAdvisor.suggest(lastSession: [(5, 61.2), (5, 61.2)], repLow: 3, repHigh: 5, increment: 2.5, unit: "kg")
         #expect(suggestion.weight == 62.5)
