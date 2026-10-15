@@ -13,8 +13,9 @@ public enum SplitGenerator {
     /// Exercise keys the templates use; they must exist in the exercise library.
     public static var allExerciseKeys: Set<String> {
         let modes: [Bool] = [true, false]
-        return Set(modes.flatMap { perf in (1...6).flatMap { templates(liftingDays: $0, performance: perf) } }
-            .flatMap { $0.exercises.map(\.key) })
+        let templateKeys = modes.flatMap { perf in (1...6).flatMap { templates(liftingDays: $0, performance: perf) } }
+            .flatMap { $0.exercises.map(\.key) }
+        return Set(templateKeys).union(focusAccessories.values.flatMap { $0 }).union(dunkKeys)
     }
 
     public static func templates(liftingDays: Int, performance: Bool) -> [Template] {
@@ -35,11 +36,16 @@ public enum SplitGenerator {
         }
     }
 
-    public static func generate(liftingDays: Int, courtDays: Int, mode: GoalMode,
+    /// Builds the week.
+    /// - Parameters:
+    ///   - focus: lagging muscle groups that get extra sets and an accessory on the days that train them.
+    ///   - dunk: swaps lower-day plyos for depth jumps and trap-bar jumps, adds calf/ankle work,
+    ///     and puts approach jumps at the start of court days.
+    public static func generate(liftingDays: Int, courtDays: Int, mode: GoalMode, focus: Set<MuscleGroup> = [], dunk: Bool = false,
                                 exerciseID: (String) -> UUID = { StableID.uuid("exercise", $0) }) -> [PlannedDay] {
         let lifting = max(0, min(6, liftingDays))
         let court = max(0, min(7 - lifting, courtDays))
-        let performance = mode != .bulk
+        let performance = mode != .bulk || dunk
         let lifts = templates(liftingDays: lifting, performance: performance)
         let sequence = bestArrangement(liftRegions: lifts.map(\.region), courtDays: court)
 
@@ -50,22 +56,132 @@ public enum SplitGenerator {
             case .lift:
                 let template = lifts[liftIndex]
                 liftIndex += 1
-                let exercises = template.exercises.map { item in
+                var items = template.exercises.map { Item(key: $0.key, sets: $0.sets, low: $0.low, high: $0.high, note: nil) }
+                var focusText = template.focus
+                if dunk && template.region != .upper {
+                    items = applyDunk(items)
+                    focusText += " + jump training"
+                }
+                let boosted = applyFocus(items, region: template.region, focus: focus)
+                items = boosted.items
+                if !boosted.muscles.isEmpty {
+                    focusText += " · extra \(boosted.muscles.map(\.title).joined(separator: ", ").lowercased())"
+                }
+                let exercises = items.map { item in
                     PlannedExercise(exerciseID: exerciseID(item.key), sets: item.sets, repLow: item.low,
-                                    repHigh: item.high, restSeconds: restSeconds(repHigh: item.high, key: item.key))
+                                    repHigh: item.high, restSeconds: restSeconds(repHigh: item.high, key: item.key), note: item.note)
                 }
                 return PlannedDay(weekday: weekday, dayType: .lifting, title: template.title,
-                                  focus: template.focus, exercises: exercises)
+                                  focus: focusText, exercises: exercises)
             case .court:
-                let block = courtIndex % 2 == 0 ? courtConditioning : courtSkills
+                var block = courtIndex % 2 == 0 ? courtConditioning : courtSkills
                 courtIndex += 1
+                if dunk {
+                    block.items.insert("Approach jumps to the rim, 3 × 4 with full rest (dunk attempts while fresh)", at: 1)
+                }
                 return PlannedDay(weekday: weekday, dayType: .conditioning, title: block.title,
-                                  focus: "Court work at the Y", block: block)
+                                  focus: dunk ? "Court work + approach jumps" : "Court work", block: block)
             case .rest:
                 return PlannedDay(weekday: weekday, dayType: .rest, title: "Recovery",
                                   focus: "Walk, mobility, sleep", block: mobility)
             }
         }
+    }
+
+    // MARK: - Focus and dunk
+
+    struct Item {
+        var key: String
+        var sets: Int
+        var low: Int
+        var high: Int
+        var note: String?
+    }
+
+    /// Primary muscle for every key the generator can place.
+    static let muscleForKey: [String: MuscleGroup] = [
+        "bench_press": .chest, "incline_db_press": .chest, "cable_fly": .chest,
+        "overhead_press": .shoulders, "db_shoulder_press": .shoulders, "lateral_raise": .shoulders, "face_pull": .shoulders,
+        "pull_up": .back, "lat_pulldown": .back, "barbell_row": .back, "chest_supported_row": .back,
+        "seated_cable_row": .back, "single_arm_db_row": .back,
+        "db_curl": .biceps, "hammer_curl": .biceps,
+        "triceps_pushdown": .triceps, "overhead_triceps_extension": .triceps, "dips": .triceps,
+        "back_squat": .quads, "leg_press": .quads, "bulgarian_split_squat": .quads, "walking_lunge": .quads,
+        "leg_extension": .quads, "goblet_squat": .quads,
+        "romanian_deadlift": .hamstrings, "leg_curl": .hamstrings,
+        "trap_bar_deadlift": .glutes, "hip_thrust": .glutes,
+        "standing_calf_raise": .calves, "seated_calf_raise": .calves, "pogo_jump": .calves,
+        "hanging_knee_raise": .core, "pallof_press": .core, "cable_crunch": .core,
+    ]
+
+    /// Accessories to add for a lagging muscle, in order of preference.
+    static let focusAccessories: [MuscleGroup: [String]] = [
+        .chest: ["cable_fly", "incline_db_press"], .back: ["single_arm_db_row", "lat_pulldown"],
+        .shoulders: ["lateral_raise", "face_pull"], .biceps: ["hammer_curl", "db_curl"],
+        .triceps: ["overhead_triceps_extension", "triceps_pushdown"], .quads: ["leg_extension", "goblet_squat"],
+        .hamstrings: ["leg_curl", "romanian_deadlift"], .glutes: ["hip_thrust"],
+        .calves: ["standing_calf_raise", "seated_calf_raise"], .core: ["cable_crunch"],
+    ]
+
+    static let dunkKeys: Set<String> = ["depth_jump", "trap_bar_jump", "pogo_jump", "standing_calf_raise"]
+    static let plyoKeys: Set<String> = ["box_jump", "broad_jump", "med_ball_slam", "med_ball_chest_pass"]
+
+    /// Most extra sets focus work may add to one day.
+    static let maxAddedSetsPerDay = 8
+
+    static func applyFocus(_ items: [Item], region: BodyRegion, focus: Set<MuscleGroup>) -> (items: [Item], muscles: [MuscleGroup]) {
+        var items = items
+        var added = 0
+        var applied: [MuscleGroup] = []
+        for muscle in MuscleGroup.allCases where focus.contains(muscle) {
+            let fits: Bool = switch muscle.region {
+            case .upper: region == .upper || region == .full
+            case .lower: region == .lower || region == .full
+            case .core: true
+            case .full, .conditioning: false
+            }
+            guard fits, added < maxAddedSetsPerDay else { continue }
+            var touched = false
+            if let index = items.firstIndex(where: { muscleForKey[$0.key] == muscle }), items[index].sets < 5 {
+                items[index].sets += 1
+                items[index].note = "Focus"
+                added += 1
+                touched = true
+            }
+            if let accessory = focusAccessories[muscle]?.first(where: { key in !items.contains { $0.key == key } }) {
+                let sets = touched ? 2 : 3
+                let (low, high) = muscle == .calves ? (12, 20) : accessory == "hip_thrust" ? (8, 12) : (10, 15)
+                let item = Item(key: accessory, sets: sets, low: low, high: high, note: "Focus")
+                // Keep core work last.
+                if let coreIndex = items.lastIndex(where: { muscleForKey[$0.key] == .core }), muscle != .core {
+                    items.insert(item, at: coreIndex)
+                } else {
+                    items.append(item)
+                }
+                added += sets
+                touched = true
+            }
+            if touched { applied.append(muscle) }
+        }
+        return (items, applied)
+    }
+
+    static func applyDunk(_ items: [Item]) -> [Item] {
+        var result = items.filter { !plyoKeys.contains($0.key) }
+        result.insert(contentsOf: [
+            Item(key: "depth_jump", sets: 3, low: 3, high: 3, note: "Dunk"),
+            Item(key: "trap_bar_jump", sets: 3, low: 3, high: 3, note: "Dunk"),
+        ], at: 0)
+        if !result.contains(where: { muscleForKey[$0.key] == .calves && $0.key != "pogo_jump" }) {
+            result.append(Item(key: "standing_calf_raise", sets: 3, low: 10, high: 15, note: "Dunk"))
+        }
+        let pogo = Item(key: "pogo_jump", sets: 3, low: 20, high: 20, note: "Dunk")
+        if let coreIndex = result.lastIndex(where: { muscleForKey[$0.key] == .core }) {
+            result.insert(pogo, at: coreIndex)
+        } else {
+            result.append(pogo)
+        }
+        return result
     }
 
     // MARK: - Arrangement
@@ -133,6 +249,8 @@ public enum SplitGenerator {
     }
 
     static func restSeconds(repHigh: Int, key: String) -> Int {
+        if ["depth_jump", "trap_bar_jump"].contains(key) { return 120 }
+        if key == "pogo_jump" { return 60 }
         if ["box_jump", "broad_jump", "med_ball_chest_pass", "med_ball_slam"].contains(key) { return 90 }
         switch repHigh {
         case ...6: return 180

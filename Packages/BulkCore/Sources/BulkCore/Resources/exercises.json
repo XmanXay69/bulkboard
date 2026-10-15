@@ -57,6 +57,10 @@
   {"key": "broad_jump", "name": "Broad Jump", "muscle": "fullBody", "equipment": "bodyweight", "compound": true, "rest": 90},
   {"key": "med_ball_chest_pass", "name": "Med Ball Chest Pass", "muscle": "fullBody", "equipment": "medicineBall", "compound": true, "rest": 90},
   {"key": "med_ball_slam", "name": "Med Ball Slam", "muscle": "fullBody", "equipment": "medicineBall", "compound": true, "rest": 75},
+  {"key": "depth_jump", "name": "Depth Jump", "muscle": "fullBody", "equipment": "other", "compound": true, "rest": 120},
+  {"key": "trap_bar_jump", "name": "Trap Bar Jump", "muscle": "fullBody", "equipment": "barbell", "compound": true, "rest": 120},
+  {"key": "pogo_jump", "name": "Pogo Jumps (reps = contacts)", "muscle": "calves", "equipment": "bodyweight", "compound": false, "rest": 60},
+  {"key": "approach_jump", "name": "Approach Jump", "muscle": "fullBody", "equipment": "court", "compound": true, "rest": 90},
   {"key": "jump_rope", "name": "Jump Rope (reps = seconds)", "muscle": "conditioning", "equipment": "other", "compound": false, "rest": 60},
   {"key": "bike_sprints", "name": "Bike Sprints (reps = seconds)", "muscle": "conditioning", "equipment": "machine", "compound": false, "rest": 90}
 ]
