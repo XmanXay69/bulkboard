@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test and build
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: BulkCore logic tests
+        working-directory: Packages/BulkCore
+        run: swift test
+
+      - name: Xcode project matches project.yml
+        env:
+          XCODEGEN_VERSION: "2.46.0"
+        run: |
+          curl -sSL "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip" -o xcodegen.zip
+          unzip -q xcodegen.zip -d xcodegen-bin
+          ./xcodegen-bin/xcodegen/bin/xcodegen generate
+          git diff --exit-code -- BulkBoard.xcodeproj
+
+      - name: App tests
+        run: |
+          set -o pipefail
+          xcodebuild -project BulkBoard.xcodeproj -scheme BulkBoard -destination 'platform=macOS' \
+            -derivedDataPath build test | tail -40
+
+      - name: Release build (universal)
+        run: |
+          set -o pipefail
+          xcodebuild -project BulkBoard.xcodeproj -scheme BulkBoard -configuration Release \
+            -destination 'generic/platform=macOS' -derivedDataPath build build | tail -20
+          lipo -archs build/Build/Products/Release/BulkBoard.app/Contents/MacOS/BulkBoard
+          ditto -c -k --keepParent build/Build/Products/Release/BulkBoard.app BulkBoard-macOS.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BulkBoard-macOS
+          path: BulkBoard-macOS.zip
+          retention-days: 14

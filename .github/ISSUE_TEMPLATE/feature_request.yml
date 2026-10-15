@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest an idea
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The problem or goal, in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Targets, Meal plan, Grocery list, Training, Progress, Foods & recipes, Local AI, Data & backups, Other]

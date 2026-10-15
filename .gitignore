@@ -31,3 +31,7 @@ dist/
 *.env
 .env*
 backups/
+
+# CI scratch
+xcodegen.zip
+xcodegen-bin/
