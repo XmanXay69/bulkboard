@@ -1,6 +1,6 @@
 #!/bin/zsh
-# Builds a universal, ad-hoc signed Release app and zips it into dist/.
-# Usage: scripts/release.sh 0.1.0
+# Builds a universal, ad-hoc signed Release app and packages it into dist/ as a DMG and a zip.
+# Usage: scripts/release.sh 0.2.0
 set -euo pipefail
 VERSION="${1:?version, e.g. 0.1.0}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,3 +18,4 @@ ZIP="dist/BulkBoard-$VERSION-macOS.zip"
 rm -f "$ZIP"
 ditto -c -k --keepParent "$APP" "$ZIP"
 shasum -a 256 "$ZIP"
+"$ROOT/scripts/make_dmg.sh" "$APP" "$VERSION" dist

@@ -46,6 +46,10 @@ That runs `swift test` for BulkCore and `xcodebuild test` for the app. New logic
 
 `scripts/screenshots.sh` rebuilds everything in `docs/screenshots` from demo data, using the app's built-in capture mode (no Screen Recording permission needed). Build the Debug app first.
 
+## Releases
+
+`scripts/release.sh <version>` builds the universal Release app and writes `dist/BulkBoard-<version>.dmg` (drag-to-install) and a zip. Bump `MARKETING_VERSION` in `project.yml` first, tag `v<version>`, then attach both files to the GitHub release. CI also uploads a DMG artifact for every push.
+
 ## Pull requests
 
 - Small and focused. Describe what changed and how you tested it.

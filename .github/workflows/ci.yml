@@ -47,10 +47,10 @@ jobs:
           xcodebuild -project BulkBoard.xcodeproj -scheme BulkBoard -configuration Release \
             -destination 'generic/platform=macOS' -derivedDataPath build build | tail -20
           lipo -archs build/Build/Products/Release/BulkBoard.app/Contents/MacOS/BulkBoard
-          ditto -c -k --keepParent build/Build/Products/Release/BulkBoard.app BulkBoard-macOS.zip
+          scripts/make_dmg.sh build/Build/Products/Release/BulkBoard.app ci-${GITHUB_SHA::7} artifacts
 
       - uses: actions/upload-artifact@v4
         with:
-          name: BulkBoard-macOS
-          path: BulkBoard-macOS.zip
+          name: BulkBoard-macOS-dmg
+          path: artifacts/*.dmg
           retention-days: 14

@@ -96,17 +96,16 @@ Neutral and quiet: system fonts, one accent color, native controls, light and da
 
 ## Install
 
-1. Download the zip from the [latest release](https://github.com/XmanXay69/bulkboard/releases/latest) and unzip it.
-2. Drag **BulkBoard.app** to Applications.
-3. The build is ad-hoc signed, not notarized, so macOS will block the first launch. Either:
-   - open it once, then go to **System Settings → Privacy & Security** and click **Open Anyway**, or
-   - run this once:
+**[⬇ Download BulkBoard for Mac (.dmg)](https://github.com/XmanXay69/bulkboard/releases/latest)**
+
+1. Open the DMG from the latest release and drag **BulkBoard** into **Applications**.
+2. Open it. The build isn't notarized by Apple yet, so macOS blocks the first launch. Go to **System Settings → Privacy & Security** and click **Open Anyway**, or run this once:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/BulkBoard.app
 ```
 
-Requires macOS 15 Sequoia or later, Apple silicon or Intel (universal build).
+Requires macOS 15 Sequoia or later, Apple silicon or Intel (universal build). A zip of the same app is attached to each release too. BulkBoard is a native Mac app, so there's no Windows version.
 
 ## Build from source
 
@@ -185,7 +184,7 @@ BulkBoard/
 - [ ] Deload weeks and periodization blocks
 - [ ] Edit the generated split (swap exercises, reorder days)
 - [ ] Apple Health export for weight and workouts
-- [ ] Notarized builds
+- [ ] Notarized, signed DMG (no "Open Anyway" step)
 
 ## Contributing
 
