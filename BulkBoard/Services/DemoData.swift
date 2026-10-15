@@ -18,6 +18,16 @@ enum DemoData {
         draft.courtDays = 2
         let profile = ProfileActions.completeOnboarding(draft, context: context)
         profile.isDemo = true
+        for record in context.fetchAll(PlanEntryRecord.self) { record.isDemo = true }
+        for record in context.fetchAll(WeightRecord.self) { record.isDemo = true }
+        context.workoutPlan?.isDemo = true
+
+        GroceryActions.generate(weekOf: .now, context: context)
+        for item in context.fetchAll(GroceryItemRecord.self).sorted(by: { $0.sortIndex < $1.sortIndex }).prefix(7) {
+            item.isChecked = true
+        }
+        GroceryActions.addManual(name: "Sports tape", amount: "2 rolls", section: .other, context: context)
+        for item in context.fetchAll(GroceryItemRecord.self) { item.isDemo = true }
         try? context.save()
     }
 }

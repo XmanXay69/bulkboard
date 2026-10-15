@@ -89,7 +89,8 @@ enum MealPlanActions {
             }
         }
 
-        let options = PlannerOptions(dislikes: profile.dislikes, avoidAllergens: profile.allergens)
+        let variety = MealVariety(rawValue: UserDefaults.standard.string(forKey: "mealVariety") ?? "") ?? .balanced
+        let options = PlannerOptions(variety: variety, dislikes: profile.dislikes, avoidAllergens: profile.allergens)
         let result = MealPlanner.planWeek(requests, candidates: candidates, options: options, seed: seed)
 
         for entry in existing where !keep.contains(where: { $0 === entry }) { context.delete(entry) }

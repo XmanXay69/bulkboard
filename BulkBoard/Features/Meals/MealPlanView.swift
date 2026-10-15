@@ -14,6 +14,7 @@ struct MealPlanView: View {
     @Query(sort: \WorkoutPlanRecord.createdAt, order: .reverse) private var plans: [WorkoutPlanRecord]
     @Query(sort: \WeightRecord.date, order: .reverse) private var weights: [WeightRecord]
     @State private var shuffleCount: UInt64 = 0
+    @AppStorage("mealVariety") private var variety: MealVariety = .balanced
 
     private var weekStart: Date { appModel.planWeekStart }
     private var days: [Date] { WeekMath.days(ofWeekStarting: weekStart) }
@@ -92,6 +93,11 @@ struct MealPlanView: View {
             } label: { Label("Clear unlocked", systemImage: "trash") }
                 .buttonStyle(GhostButtonStyle(compact: true))
                 .disabled(isEmpty)
+            Picker("Variety", selection: $variety) {
+                ForEach(MealVariety.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            .frame(width: 170)
+            .help("Meal prep repeats a few meals for a shorter grocery list")
             Spacer()
             Button {
                 appModel.groceryRequest = weekStart

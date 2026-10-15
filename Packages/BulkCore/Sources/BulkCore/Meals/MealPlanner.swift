@@ -60,18 +60,53 @@ public struct DayPlan: Sendable, Equatable {
     public var score: Double
 }
 
+/// How much the planner spreads meals across the week.
+public enum MealVariety: String, Codable, CaseIterable, Sendable {
+    /// Repeat the same few meals: shortest grocery list, easiest to batch-cook.
+    case prep
+    case balanced
+    case mixItUp
+
+    public var title: String {
+        switch self {
+        case .prep: "Meal prep"
+        case .balanced: "Balanced"
+        case .mixItUp: "Mix it up"
+        }
+    }
+
+    var maxRepeatsPerWeek: Int {
+        switch self {
+        case .prep: 7
+        case .balanced: 3
+        case .mixItUp: 2
+        }
+    }
+
+    /// Cost per extra use of a meal within the week. Negative rewards repeats.
+    var repeatPenalty: Double {
+        switch self {
+        case .prep: -0.01
+        case .balanced: 0.015
+        case .mixItUp: 0.04
+        }
+    }
+}
+
 public struct PlannerOptions: Sendable {
     public var servingSteps: [Double]
     public var restarts: Int
     public var maxRepeatsPerWeek: Int
+    public var repeatPenalty: Double
     public var dislikes: [String]
     public var avoidAllergens: Set<Allergen>
 
-    public init(servingSteps: [Double] = [0.75, 1, 1.25, 1.5, 2], restarts: Int = 6, maxRepeatsPerWeek: Int = 3,
+    public init(servingSteps: [Double] = [0.75, 1, 1.25, 1.5, 2], restarts: Int = 6, variety: MealVariety = .balanced,
                 dislikes: [String] = [], avoidAllergens: Set<Allergen> = []) {
         self.servingSteps = servingSteps
         self.restarts = restarts
-        self.maxRepeatsPerWeek = maxRepeatsPerWeek
+        self.maxRepeatsPerWeek = variety.maxRepeatsPerWeek
+        self.repeatPenalty = variety.repeatPenalty
         self.dislikes = dislikes
         self.avoidAllergens = avoidAllergens
     }
@@ -143,7 +178,7 @@ public enum MealPlanner {
                 counts[meal.candidateID, default: 0] += 1
                 let used = usage[meal.candidateID, default: 0] + counts[meal.candidateID, default: 0]
                 if used > options.maxRepeatsPerWeek { cost += 0.5 }
-                cost += 0.015 * Double(used - 1)
+                cost += options.repeatPenalty * Double(used - 1)
                 if counts[meal.candidateID, default: 0] > 1 { cost += 0.3 } // same meal twice in a day
                 cost += 0.004 * abs(meal.servings - 1)
             }

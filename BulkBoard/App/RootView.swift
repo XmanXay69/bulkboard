@@ -45,6 +45,7 @@ struct MainView: View {
         case .targets: TargetsView(profile: profile)
         case .meals: MealPlanView(profile: profile)
         case .library: LibraryView()
+        case .grocery: GroceryView()
         default:
             EmptyStateView(symbol: section.symbol, title: section.title, message: "Coming up next.")
         }

@@ -81,6 +81,16 @@ struct MealPlannerTests {
         #expect(used.count >= 8)
     }
 
+    @Test func mealPrepRepeatsMoreThanMixItUp() {
+        func distinct(_ variety: MealVariety) -> Int {
+            let plans = MealPlanner.planWeek(week(), candidates: candidates, options: PlannerOptions(variety: variety), seed: 21)
+            return Set(plans.flatMap { $0.meals.compactMap { $0?.candidateID } }).count
+        }
+        #expect(distinct(.prep) < distinct(.mixItUp))
+        let prep = MealPlanner.planWeek(week(), candidates: candidates, options: PlannerOptions(variety: .prep), seed: 21)
+        for plan in prep { #expect(abs(plan.totals.kcal - target.kcal) / target.kcal < 0.05) }
+    }
+
     @Test func emptySlotWhenNothingFits() {
         let noShakes = candidates.filter { !$0.slots.contains(.shake) }
         let plans = MealPlanner.planWeek(week(), candidates: noShakes, seed: 2)

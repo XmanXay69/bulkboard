@@ -98,3 +98,54 @@ struct MealFlowTests {
         }
     }
 }
+
+@Suite("Grocery list flows")
+@MainActor
+struct GroceryFlowTests {
+    @Test func generatesMergedListFromThePlan() throws {
+        let context = try makeContext()
+        onboard(context)
+        GroceryActions.generate(weekOf: .now, context: context)
+        let items = context.fetchAll(GroceryItemRecord.self)
+        #expect(items.count >= 10)
+        #expect(Set(items.map { $0.name.lowercased() }).count == items.count, "Each food appears once")
+        #expect(items.allSatisfy { !$0.amountText.isEmpty })
+        #expect(items.allSatisfy { !$0.isManual })
+    }
+
+    @Test func regeneratingKeepsManualItemsAndChecks() throws {
+        let context = try makeContext()
+        onboard(context)
+        GroceryActions.generate(weekOf: .now, context: context)
+        GroceryActions.addManual(name: "Paper towels", amount: "1 pack", section: .other, context: context)
+        let first = try #require(context.fetchAll(GroceryItemRecord.self).first { !$0.isManual })
+        first.isChecked = true
+        let checkedName = first.name
+
+        GroceryActions.generate(weekOf: .now, context: context)
+        let items = context.fetchAll(GroceryItemRecord.self)
+        #expect(items.contains { $0.isManual && $0.name == "Paper towels" })
+        #expect(items.first { $0.name == checkedName }?.isChecked == true)
+        #expect(items.filter { $0.name == "Paper towels" }.count == 1)
+    }
+
+    @Test func plainTextGroupsByAisle() throws {
+        let context = try makeContext()
+        onboard(context)
+        GroceryActions.generate(weekOf: .now, context: context)
+        let text = GroceryActions.plainText(context.fetchAll(GroceryItemRecord.self), weekStart: Date.now.weekStart)
+        #expect(text.hasPrefix("BulkBoard groceries · week of"))
+        #expect(text.contains("DAIRY & EGGS"))
+        #expect(text.contains("[ ] "))
+    }
+
+    @Test func clearCheckedRemovesOnlyChecked() throws {
+        let context = try makeContext()
+        onboard(context)
+        GroceryActions.generate(weekOf: .now, context: context)
+        let total = context.fetchAll(GroceryItemRecord.self).count
+        context.fetchAll(GroceryItemRecord.self).prefix(3).forEach { $0.isChecked = true }
+        GroceryActions.clearChecked(context: context)
+        #expect(context.fetchAll(GroceryItemRecord.self).count == total - 3)
+    }
+}

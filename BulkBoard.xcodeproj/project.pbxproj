@@ -36,8 +36,10 @@
 		D60DC50A09C93B9049D5C2DF /* CourtBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73FD0D6A67EB9EA74133D49B /* CourtBackdrop.swift */; };
 		DA49CC9F63B59179C89A83C0 /* TargetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514DCFAF46E3C7C549E453ED /* TargetsView.swift */; };
 		E398A15261C60C9AAD60C265 /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D5E514ADCC65922129F7B0 /* Editors.swift */; };
+		E8CCF380A436DEC939E94F48 /* GroceryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60016C231D82B358E4D712F3 /* GroceryView.swift */; };
 		E9090DC815B51FDB1A076CB5 /* Mapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98FC99080CAF8B91F08F3AE1 /* Mapping.swift */; };
 		EB29C2AF9C647383C42B5B64 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F50D13C171D22F83FDE27D /* LibraryView.swift */; };
+		EDD02628DC55AEF91AB11102 /* GroceryActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D1C52492F3AD5B4AB077B5 /* GroceryActions.swift */; };
 		F08DE01D803BA2A6720B3C92 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D88E49252B6DBCD485ABC59 /* SmokeTests.swift */; };
 		F76FF0BB52003CFE90910ED9 /* AISheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A94641E97C85B0319B11A8A1 /* AISheets.swift */; };
 /* End PBXBuildFile section */
@@ -64,6 +66,7 @@
 		4D88E49252B6DBCD485ABC59 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
 		514DCFAF46E3C7C549E453ED /* TargetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetsView.swift; sourceTree = "<group>"; };
 		5883F1099945DA538CB6AFCD /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		60016C231D82B358E4D712F3 /* GroceryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroceryView.swift; sourceTree = "<group>"; };
 		67D857AF202391D00CADB88B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		68EBFC76A203061C446C538C /* MealPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanView.swift; sourceTree = "<group>"; };
 		69F50D13C171D22F83FDE27D /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
@@ -86,6 +89,7 @@
 		DF6545531BAC9E00ED8FA62D /* OnboardingDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDraft.swift; sourceTree = "<group>"; };
 		E280A50847099CD05B48DCE6 /* OllamaClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaClient.swift; sourceTree = "<group>"; };
 		EBFDB4EC019602021D07DC00 /* BulkBoardTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BulkBoardTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F3D1C52492F3AD5B4AB077B5 /* GroceryActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroceryActions.swift; sourceTree = "<group>"; };
 		F5A6829FB65A6EA18F2FC1C5 /* TrainingActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingActions.swift; sourceTree = "<group>"; };
 		FB34B4459F9D0C18E024CD33 /* MealPlanActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanActions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -149,6 +153,7 @@
 			isa = PBXGroup;
 			children = (
 				F71CF369A87934BD4E8A68ED /* AI */,
+				E67F49557CE68A96E25C0E28 /* Grocery */,
 				BC4086BB7A0149000856C0E6 /* Library */,
 				D01FF34F87949C14F8B7E676 /* Meals */,
 				F073C175D049CA58B4C3CB75 /* Onboarding */,
@@ -188,6 +193,7 @@
 			isa = PBXGroup;
 			children = (
 				0649D614C90CD058BDC67927 /* DemoData.swift */,
+				F3D1C52492F3AD5B4AB077B5 /* GroceryActions.swift */,
 				FB34B4459F9D0C18E024CD33 /* MealPlanActions.swift */,
 				E280A50847099CD05B48DCE6 /* OllamaClient.swift */,
 				C0AF85E57040E487847CDE82 /* ProfileActions.swift */,
@@ -250,6 +256,14 @@
 				DE38496DE28BCE2C2F700422 /* RootView.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		E67F49557CE68A96E25C0E28 /* Grocery */ = {
+			isa = PBXGroup;
+			children = (
+				60016C231D82B358E4D712F3 /* GroceryView.swift */,
+			);
+			path = Grocery;
 			sourceTree = "<group>";
 		};
 		F073C175D049CA58B4C3CB75 /* Onboarding */ = {
@@ -388,6 +402,8 @@
 				E398A15261C60C9AAD60C265 /* Editors.swift in Sources */,
 				A8F1B35E6CACA112B265C21F /* FlowLayout.swift in Sources */,
 				9370CC6030BF9B1521842548 /* Formatters.swift in Sources */,
+				EDD02628DC55AEF91AB11102 /* GroceryActions.swift in Sources */,
+				E8CCF380A436DEC939E94F48 /* GroceryView.swift in Sources */,
 				37807EB32FC7557676DEB288 /* Inputs.swift in Sources */,
 				EB29C2AF9C647383C42B5B64 /* LibraryView.swift in Sources */,
 				E9090DC815B51FDB1A076CB5 /* Mapping.swift in Sources */,
