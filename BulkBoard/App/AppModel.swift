@@ -42,4 +42,9 @@ final class AppModel {
     var section: AppSection = .dashboard
     var onboardingStep: OnboardingView.Step = .welcome
     var startupError: String?
+    /// Week shown in the meal planner and used for grocery generation.
+    var planWeekStart: Date = Date.now.weekStart
+    /// Set to a week start to ask the grocery screen to rebuild from that week's plan.
+    var groceryRequest: Date?
+    var showMealLibrary = false
 }
