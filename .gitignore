@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# SwiftPM
+.build/
+.swiftpm/
+Packages/*/.build/
+Package.resolved
+
+# Release output
+dist/
+*.zip
+
+# Local data and secrets — never commit
+*.store
+*.store-shm
+*.store-wal
+*.env
+.env*
+backups/

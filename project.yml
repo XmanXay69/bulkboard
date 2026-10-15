@@ -1,0 +1,70 @@
+name: BulkBoard
+options:
+  bundleIdPrefix: com.xmanxay
+  deploymentTarget:
+    macOS: "15.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+packages:
+  BulkCore:
+    path: Packages/BulkCore
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    DEAD_CODE_STRIPPING: YES
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+targets:
+  BulkBoard:
+    type: application
+    platform: macOS
+    sources:
+      - path: BulkBoard
+    dependencies:
+      - package: BulkCore
+    settings:
+      base:
+        PRODUCT_NAME: BulkBoard
+        PRODUCT_BUNDLE_IDENTIFIER: com.xmanxay.BulkBoard
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: BulkBoard
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.healthcare-fitness
+        INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Xay. MIT License."
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_HARDENED_RUNTIME: NO
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        COMBINE_HIDPI_IMAGES: YES
+  BulkBoardTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: BulkBoardTests
+    dependencies:
+      - target: BulkBoard
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xmanxay.BulkBoardTests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/BulkBoard.app/Contents/MacOS/BulkBoard"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+schemes:
+  BulkBoard:
+    build:
+      targets:
+        BulkBoard: all
+        BulkBoardTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - BulkBoardTests
+    archive:
+      config: Release
