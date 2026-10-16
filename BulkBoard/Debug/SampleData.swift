@@ -1,11 +1,12 @@
+#if DEBUG
 import BulkCore
 import Foundation
 import SwiftData
 
-/// Clearly-labeled sample data for screenshots and kicking the tires. Everything it creates has
-/// `isDemo = true` (shown with a DEMO badge) and `wipe` removes it in one pass.
+/// Sample data for README screenshots and tests. Debug builds only: the app people download has no
+/// demo data. Only ever loaded into throwaway in-memory stores (`--in-memory --sample`).
 /// The person is fictional: a 24-year-old, 6′2″ hooper ten weeks into a lean bulk.
-enum DemoData {
+enum SampleData {
     static let weeksOfHistory = 10
 
     static func load(into context: ModelContext, today: Date = .now) {
@@ -25,13 +26,14 @@ enum DemoData {
         draft.courtDays = 2
         draft.dislikesText = "mushrooms"
         let profile = ProfileActions.completeOnboarding(draft, context: context)
-        profile.isDemo = true
         profile.startDate = start
         for weight in context.fetchAll(WeightRecord.self) { context.delete(weight) }
 
         addWeighIns(from: start, to: today, rng: &rng, context: context)
         addTraining(from: start, to: today, rng: &rng, context: context)
+        MealPlanActions.autoFill(weekOf: today, context: context, seed: 2026)
         addIntake(from: start, to: today, profile: profile, rng: &rng, context: context)
+        addLoggedMeals(today: today, context: context)
         addCheckIns(today: today, context: context)
 
         GroceryActions.generate(weekOf: today, context: context)
@@ -39,35 +41,7 @@ enum DemoData {
             item.isChecked = true
         }
         GroceryActions.addManual(name: "Sports tape", amount: "2 rolls", section: .other, context: context)
-
-        markAllDemo(context)
         try? context.save()
-    }
-
-    /// Deletes every demo record. If the profile itself was demo, the app returns to onboarding.
-    static func wipe(_ context: ModelContext) {
-        func purge<T: PersistentModel>(_ type: T.Type, _ isDemo: (T) -> Bool) {
-            for record in context.fetchAll(type) where isDemo(record) { context.delete(record) }
-        }
-        purge(ProfileRecord.self) { $0.isDemo }
-        purge(PlanEntryRecord.self) { $0.isDemo }
-        purge(IntakeRecord.self) { $0.isDemo }
-        purge(GroceryItemRecord.self) { $0.isDemo }
-        purge(WorkoutPlanRecord.self) { $0.isDemo }
-        purge(WorkoutSessionRecord.self) { $0.isDemo }
-        purge(CourtSessionRecord.self) { $0.isDemo }
-        purge(WeightRecord.self) { $0.isDemo }
-        purge(FoodRecord.self) { $0.isDemo }
-        purge(RecipeRecord.self) { $0.isDemo }
-        for record in context.fetchAll(BodyCheckInRecord.self) where record.isDemo {
-            if let photo = record.photoFilename { PhotoStore.delete(photo) }
-            context.delete(record)
-        }
-        try? context.save()
-    }
-
-    static func hasDemoData(_ context: ModelContext) -> Bool {
-        context.fetchAll(WeightRecord.self).contains(where: \.isDemo) || context.profile?.isDemo == true
     }
 
     // MARK: - Generators
@@ -187,14 +161,36 @@ enum DemoData {
         }
 
         let library = MealLibrary(context)
-        let hour = Calendar.bulk.component(.hour, from: today)
-        for entry in MealPlanActions.entries(weekOf: today, context: context) {
-            let isPast = entry.day < today.dayStart
-            let isEarlierToday = entry.day == today.dayStart && entry.slotIndex < (hour >= 13 ? 2 : 1)
-            if isPast || isEarlierToday {
-                IntakeActions.toggleEaten(entry, library: library, context: context)
-            }
+        for entry in MealPlanActions.entries(weekOf: today, context: context) where entry.day < today.dayStart {
+            MealLogActions.toggleSuggestion(entry, library: library, context: context)
         }
+    }
+
+    /// Today: a breakfast from Suggested, plus lunch put together item by item with label numbers,
+    /// saved as a reusable meal.
+    private static func addLoggedMeals(today: Date, context: ModelContext) {
+        let library = MealLibrary(context)
+        if let breakfast = MealPlanActions.entries(weekOf: today, context: context)
+            .first(where: { $0.day == today.dayStart && $0.slot == .breakfast }) {
+            MealLogActions.toggleSuggestion(breakfast, library: library, context: context)
+        }
+        let pizza = NutritionFacts(per100: Macros(kcal: 230.8, protein: 11.5, carbs: 28.5, fat: 8.5),
+                                   perServing: Macros(kcal: 300, protein: 15, carbs: 37, fat: 11),
+                                   servingGrams: 130, servingText: "1/6 pizza (130 g)", packageGrams: 780)
+        let milk = NutritionFacts(per100: Macros(kcal: 63, protein: 7.0, carbs: 2.5, fat: 2.1),
+                                  perServing: Macros(kcal: 150, protein: 30, carbs: 4, fat: 2.5),
+                                  servingGrams: 340, servingText: "1 bottle (340 ml)", isLiquid: true)
+        let items = [
+            LoggedFoodItem(name: "Rising Crust Pepperoni Pizza", brand: "DiGiorno", quantity: 2, unit: .serving,
+                           facts: pizza, source: .openFoodFacts(code: "0071921962395")),
+            LoggedFoodItem(name: "Chocolate Protein Shake", brand: "Fairlife", quantity: 1, unit: .piece("bottle"),
+                           facts: milk, source: .openFoodFacts(code: "0811620022118")),
+        ]
+        let recipe = MealLogActions.saveAsMeal(name: "Pizza + Fairlife", items: items, slot: .lunch, context: context)
+        let lunch = try? MealLogActions.log(name: "Pizza + Fairlife", items: items, slot: .lunch, day: today, photo: nil,
+                                            recipeID: recipe.id, context: context)
+        lunch?.timestamp = today.dayStart.addingTimeInterval(12.5 * 3600)
+        try? context.save()
     }
 
     /// Two tape check-ins eight weeks apart (inches converted to cm). Calves lag; the dunk is about 3 in away.
@@ -216,16 +212,5 @@ enum DemoData {
             context.insert(record)
         }
     }
-
-    private static func markAllDemo(_ context: ModelContext) {
-        for record in context.fetchAll(BodyCheckInRecord.self) { record.isDemo = true }
-        context.profile?.isDemo = true
-        for record in context.fetchAll(PlanEntryRecord.self) { record.isDemo = true }
-        for record in context.fetchAll(IntakeRecord.self) { record.isDemo = true }
-        for record in context.fetchAll(GroceryItemRecord.self) { record.isDemo = true }
-        for record in context.fetchAll(WorkoutPlanRecord.self) { record.isDemo = true }
-        for record in context.fetchAll(WorkoutSessionRecord.self) { record.isDemo = true }
-        for record in context.fetchAll(CourtSessionRecord.self) { record.isDemo = true }
-        for record in context.fetchAll(WeightRecord.self) { record.isDemo = true }
-    }
 }
+#endif

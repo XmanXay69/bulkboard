@@ -13,10 +13,6 @@ struct DashboardView: View {
     @Query(sort: \WorkoutSessionRecord.date) private var sessions: [WorkoutSessionRecord]
     @Query(sort: \CourtSessionRecord.date) private var court: [CourtSessionRecord]
     @Query(sort: \WorkoutPlanRecord.createdAt, order: .reverse) private var plans: [WorkoutPlanRecord]
-    @Query private var entries: [PlanEntryRecord]
-    @Query private var foods: [FoodRecord]
-    @Query private var recipes: [RecipeRecord]
-
 
     private var today: Date { Date.now.dayStart }
     private var units: UnitFormatter { UnitFormatter(system: profile.unitSystem) }
@@ -27,9 +23,8 @@ struct DashboardView: View {
         let plannedDay = plans.first?.day(for: today)
         let dayType = plannedDay?.dayType ?? .lifting
         let target = profile.targets(latestWeightKg: weights.last?.weightKg).target(for: dayType)
-        let todaysIntake = intake.filter { $0.day == today }
+        let todaysIntake = intake.filter { $0.day == today }.sorted { $0.timestamp < $1.timestamp }
         let eaten = todaysIntake.map(\.macros).sum()
-        let library = MealLibrary(foods: foods, recipes: recipes)
 
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.spacing) {
@@ -43,10 +38,7 @@ struct DashboardView: View {
                         .frame(width: 360)
                 }
                 HStack(alignment: .top, spacing: Theme.spacing) {
-                    TodayMealsCard(entries: entries.filter { $0.day == today }.sorted { $0.slotIndex < $1.slotIndex },
-                                   intake: todaysIntake, library: library, target: target, onQuickAdd: { appModel.activeSheet = .quickAdd }) {
-                        appModel.section = .meals
-                    }
+                    TodayMealsCard(meals: todaysIntake)
                     VStack(spacing: Theme.spacing) {
                         WeightTrendCard(stats: stats, profile: profile, units: units) { appModel.activeSheet = .weighIn }
                         StreakCard(stats: stats)
@@ -77,7 +69,7 @@ struct DashboardView: View {
                 }
                 Button { appModel.activeSheet = .weighIn } label: { Label("Weigh-in", systemImage: "scalemass") }
                     .buttonStyle(.bordered).controlSize(.small)
-                Button { appModel.activeSheet = .quickAdd } label: { Label("Quick add food", systemImage: "plus") }
+                Button { appModel.logMeal() } label: { Label("Log a meal", systemImage: "plus") }
                     .buttonStyle(.borderedProminent).controlSize(.small)
             }
         }
@@ -98,6 +90,7 @@ struct TodayMacrosCard: View {
     var eaten: Macros
     var target: Macros
     var dayType: DayType
+    var title = "Today's macros"
 
     var body: some View {
         let remaining = target - eaten
@@ -113,7 +106,7 @@ struct TodayMacrosCard: View {
                 .frame(width: 136, height: 136)
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        SectionLabel("Today's macros")
+                        SectionLabel(title)
                         Spacer()
                         if Adherence.isHit(eaten: eaten, target: target) {
                             Label("On target", systemImage: "checkmark.circle")
@@ -197,83 +190,48 @@ struct TodayWorkoutCard: View {
     }
 }
 
+/// What you've logged today. Suggestions stay in Meals → Suggested until you log them.
 struct TodayMealsCard: View {
     @Environment(AppModel.self) private var appModel
-    @Environment(\.modelContext) private var context
-    var entries: [PlanEntryRecord]
-    var intake: [IntakeRecord]
-    var library: MealLibrary
-    var target: Macros
-    var onQuickAdd: () -> Void
-    var onOpenPlan: () -> Void
+    var meals: [IntakeRecord]
 
     var body: some View {
-        let eatenIDs = Set(intake.compactMap(\.planEntryID))
-        let extras = intake.filter { $0.planEntryID == nil }
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 SectionLabel("Today's meals")
                 Spacer()
-                Button("Week plan", action: onOpenPlan).buttonStyle(.bordered).controlSize(.small)
-            }
-            if entries.isEmpty && extras.isEmpty {
-                EmptyStateView(symbol: "fork.knife", title: "Nothing planned today", message: "Auto-fill your week in Meal Plan, or quick-add what you eat.",
-                               actionTitle: "Open meal plan", action: onOpenPlan)
-            }
-            ForEach(entries) { entry in
-                let eaten = eatenIDs.contains(entry.id)
-                Button { toggle(entry) } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: eaten ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 22))
-                            .foregroundStyle(eaten ? Theme.positive : Theme.textSecondary)
-                            .contentTransition(.symbolEffect(.replace))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(entry.slot.title).font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
-                            Text(library.name(for: entry) + (entry.servings != 1 ? " ×\(Fmt.number(entry.servings, maxDecimals: 2))" : ""))
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(eaten ? Theme.textSecondary : Theme.textPrimary)
-                                .strikethrough(eaten)
-                        }
-                        Spacer()
-                        MacroPill(macros: library.macros(for: entry))
-                    }
-                    .padding(.vertical, 4)
-                    .contentShape(Rectangle())
+                Button("All meals") {
+                    appModel.mealsTab = .mine
+                    appModel.mealsDay = Date.now.dayStart
+                    appModel.section = .meals
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered).controlSize(.small)
             }
-            ForEach(extras) { record in
-                HStack(spacing: 12) {
-                    Image(systemName: "plus.circle.fill").font(.system(size: 22)).foregroundStyle(Theme.accent)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("EXTRA").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
-                        Text(record.name).font(.system(size: 14, weight: .semibold))
-                    }
+            if meals.isEmpty {
+                EmptyStateView(symbol: "fork.knife", title: "Nothing logged yet",
+                               message: "Log what you eat with a photo and what's in it. BulkBoard looks up the label numbers.",
+                               actionTitle: "Log a meal") { appModel.logMeal() }
+                HStack {
                     Spacer()
-                    MacroPill(macros: record.macros)
-                    Button {
-                        context.delete(record)
-                        try? context.save()
-                    } label: { Image(systemName: "xmark") }.buttonStyle(.plain).foregroundStyle(Theme.textSecondary)
+                    Button("Need ideas? See suggested meals") {
+                        appModel.mealsTab = .suggested
+                        appModel.section = .meals
+                    }
+                    .buttonStyle(.link).font(.system(size: 12))
+                    Spacer()
                 }
+            } else {
+                ForEach(meals) { meal in
+                    LoggedMealRow(meal: meal, compact: true)
+                }
+                Button { appModel.logMeal() } label: { Label("Log another meal", systemImage: "plus") }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                    .padding(.top, 4)
             }
-            Button(action: onQuickAdd) { Label("Quick add something else", systemImage: "plus") }
-                .buttonStyle(.plain)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.accent)
         }
         .card()
-    }
-
-    /// Logs the meal and celebrates when it tips the day onto target.
-    private func toggle(_ entry: PlanEntryRecord) {
-        let before = Adherence.isHit(eaten: intake.map(\.macros).sum(), target: target)
-        withAnimation(.spring(response: 0.3)) { IntakeActions.toggleEaten(entry, library: library, context: context) }
-        let now = context.fetchAll(IntakeRecord.self).filter { $0.day == entry.day }.map(\.macros).sum()
-        if !before && Adherence.isHit(eaten: now, target: target) {
-            appModel.celebrate(.dayComplete, title: "Macros on target", detail: "\(Fmt.int(now.kcal)) kcal · \(Fmt.int(now.protein)) g protein")
-        }
     }
 }
 
@@ -354,78 +312,5 @@ struct StreakCard: View {
             Text(label).font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
         }
         .frame(maxWidth: .infinity)
-    }
-}
-
-/// Log something you ate that wasn't in the plan.
-struct QuickAddSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var context
-    var library: MealLibrary
-    @State private var foodID: UUID?
-    @State private var recipeID: UUID?
-    @State private var servings = 1.0
-    @State private var slot: MealSlot = .snack
-    @State private var tab = 0
-
-    private var macros: Macros {
-        library.macros(recipeID: recipeID, foodID: foodID, servings: servings)
-    }
-
-    private var name: String {
-        if let recipeID, let recipe = library.recipes[recipeID] { return recipe.name }
-        if let foodID, let food = library.foodRecords[foodID] { return food.name }
-        return ""
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Quick add").font(.system(size: 22, weight: .semibold))
-            Picker("Source", selection: $tab) {
-                Text("Foods").tag(0)
-                Text("Meals").tag(1)
-            }
-            .pickerStyle(.segmented).labelsHidden()
-            if tab == 0 {
-                FoodSearchPicker(library: library, shakerOnly: false) { id in
-                    foodID = id
-                    recipeID = nil
-                }
-                .frame(height: 300)
-            } else {
-                MealPickerView(slot: slot, library: library) { recipe, food in
-                    recipeID = recipe
-                    foodID = food
-                }
-                .frame(height: 380)
-            }
-            if !name.isEmpty {
-                HStack {
-                    Text(name).font(.system(size: 14, weight: .bold))
-                    Spacer()
-                    MacroPill(macros: macros)
-                }
-                .card(padding: 10)
-            }
-            HStack {
-                Picker("Meal", selection: $slot) {
-                    ForEach(MealSlot.allCases, id: \.self) { Text($0.title).tag($0) }
-                }
-                .frame(width: 180)
-                Stepper("×\(Fmt.number(servings, maxDecimals: 2)) servings", value: $servings, in: 0.25...6, step: 0.25)
-                Spacer()
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                Button("Log it") {
-                    IntakeActions.logQuick(name: servings == 1 ? name : "\(name) ×\(Fmt.number(servings, maxDecimals: 2))",
-                                           macros: macros, slot: slot, context: context)
-                    dismiss()
-                }
-                .buttonStyle(.borderedProminent).controlSize(.small)
-                .keyboardShortcut(.defaultAction)
-                .disabled(name.isEmpty)
-            }
-        }
-        .padding(22)
-        .frame(width: 520)
     }
 }

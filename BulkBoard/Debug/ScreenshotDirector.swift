@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Launch-argument driven screen capture, used for README screenshots and smoke-checking screens.
 ///
-///     open BulkBoard.app --args --in-memory --demo --capture=<dir> [--sections=dashboard,meals] [--onboarding] [--size=1440x900] [--full-page] [--quit]
+///     open BulkBoard.app --args --in-memory --sample --capture=<dir> [--sections=dashboard,meals] [--onboarding] [--size=1440x900] [--full-page] [--quit]
 ///
 /// Values use `--key=value`: a bare path argument makes AppKit treat it as a file to open and skip the main window.
 /// Renders each screen with AppKit's `cacheDisplay`, so it needs no Screen Recording permission.
@@ -32,9 +32,11 @@ enum ScreenshotDirector {
             }
         }
 
-        if arguments.contains("--demo"), context.profile == nil {
-            DemoData.load(into: context)
+        #if DEBUG
+        if arguments.contains("--sample"), Persistence.usesInMemoryStore, context.profile == nil {
+            SampleData.load(into: context)
         }
+        #endif
 
         if context.profile != nil {
             let sections = value(after: "--sections")?.split(separator: ",").compactMap { AppSection(rawValue: String($0)) }
@@ -47,6 +49,14 @@ enum ScreenshotDirector {
                         await capture(to: directory.appendingPathComponent(String(format: "%02d-body-%@.png", index + 1, tab.rawValue.lowercased())))
                     }
                     appModel.bodyTab = .physique
+                    continue
+                }
+                if section == .meals {
+                    for tab in MealsTab.allCases {
+                        appModel.mealsTab = tab
+                        await capture(to: directory.appendingPathComponent(String(format: "%02d-meals-%@.png", index + 1, tab == .mine ? "mine" : "suggested")))
+                    }
+                    appModel.mealsTab = .mine
                     continue
                 }
                 if section == .training {
@@ -62,7 +72,47 @@ enum ScreenshotDirector {
             }
         }
 
+        if value(after: "--sheet") == "log-meal", context.profile != nil {
+            await captureLogMeal(appModel: appModel, context: context, to: directory)
+        }
+        if value(after: "--sheet") == "update", context.profile != nil {
+            await Updater.shared.check(userInitiated: false)
+            Updater.shared.showSheet = Updater.shared.isUpdateAvailable
+            await capture(to: directory.appendingPathComponent("update.png"), sheet: true)
+            Updater.shared.showSheet = false
+        }
+
         if arguments.contains("--quit") { NSApp.terminate(nil) }
+    }
+
+    /// Opens Log a meal with two typed items, looks them up for real (food list + Open Food Facts),
+    /// picks the top match for each, and captures the sheet.
+    private static func captureLogMeal(appModel: AppModel, context: ModelContext, to directory: URL) async {
+        appModel.section = .meals
+        let draft = MealDraft(day: .now, slot: .lunch)
+        let pizza = draft.items[0]
+        pizza.product = "pepperoni pizza"
+        pizza.brand = "DiGiorno"
+        pizza.quantity = 2
+        pizza.unit = .serving
+        let shake = ItemDraft()
+        shake.product = "chocolate protein shake"
+        shake.brand = "Fairlife"
+        shake.quantity = 1
+        shake.unit = .piece("bottle")
+        draft.items.append(shake)
+        appModel.activeSheet = .logMeal(draft)
+        try? await Task.sleep(for: .milliseconds(800))
+        let library = MealLibrary(context)
+        for item in draft.items {
+            await ItemLookup.search(item, library: library)
+            if let online = item.results.first(where: { if case .product = $0.kind { true } else { false } }) ?? item.results.first {
+                await ItemLookup.choose(online, for: item, library: library)
+            }
+            print("lookup:", item.product, "->", item.match?.name ?? "none", item.match?.detail ?? "", item.macros.map { "\($0.kcal) kcal" } ?? "")
+        }
+        await capture(to: directory.appendingPathComponent("log-meal.png"), sheet: true)
+        appModel.activeSheet = nil
     }
 
     /// A half-finished session so the logger screenshot shows previous performance, suggestions and PRs.
@@ -105,9 +155,11 @@ enum ScreenshotDirector {
         NSApp.windows.first { $0.isVisible && $0.canBecomeMain }
     }
 
-    private static func capture(to url: URL) async {
-        try? await Task.sleep(for: .milliseconds(1200))
-        guard let window = mainWindow, var view = window.contentView?.superview ?? window.contentView else { return }
+    private static func capture(to url: URL, sheet: Bool = false) async {
+        try? await Task.sleep(for: .milliseconds(Int(value(after: "--delay") ?? "") ?? 1200))
+        guard let main = mainWindow else { return }
+        let window = sheet ? main.attachedSheet ?? main : main
+        guard var view = window.contentView?.superview ?? window.contentView else { return }
         if arguments.contains("--full-page"), let document = largestScrollDocument(in: view) {
             view = document
         }

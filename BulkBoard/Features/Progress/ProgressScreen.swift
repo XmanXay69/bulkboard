@@ -216,7 +216,6 @@ struct WeighInTable: View {
                     Text(record.date.formatted(.dateTime.weekday(.abbreviated).month().day().year()))
                         .foregroundStyle(Theme.textSecondary)
                     Spacer()
-                    if record.isDemo { DemoBadge() }
                     Text(units.weight(record.weightKg)).monospacedDigit().foregroundStyle(Theme.textPrimary)
                     Button {
                         context.delete(record)

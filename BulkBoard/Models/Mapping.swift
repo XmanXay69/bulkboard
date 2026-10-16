@@ -187,7 +187,18 @@ extension IntakeRecord {
         }
     }
 
-    var slot: MealSlot { MealSlot(rawValue: slotRaw) ?? .snack }
+    var slot: MealSlot {
+        get { MealSlot(rawValue: slotRaw) ?? .snack }
+        set { slotRaw = newValue.rawValue }
+    }
+
+    var items: [LoggedFoodItem] {
+        get { Blob.decode([LoggedFoodItem].self, from: itemsData, default: []) }
+        set { itemsData = newValue.isEmpty ? nil : Blob.encode(newValue) }
+    }
+
+    /// True when any number came from an AI guess.
+    var hasEstimates: Bool { items.contains { $0.source.isEstimate } }
 }
 
 extension GroceryItemRecord {

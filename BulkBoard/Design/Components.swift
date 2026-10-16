@@ -307,14 +307,3 @@ struct AIEstimateBadge: View {
             .background(Theme.accent.opacity(0.1), in: Capsule())
     }
 }
-
-struct DemoBadge: View {
-    var body: some View {
-        Text("Demo")
-            .font(.system(size: 10, weight: .medium))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .foregroundStyle(Theme.textSecondary)
-            .background(Theme.surfaceRaised, in: Capsule())
-    }
-}

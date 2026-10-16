@@ -54,6 +54,8 @@ nonisolated struct BackupDocument: Codable {
     struct Intake: Codable {
         var id: UUID, day: Date, timestamp: Date, slot: String, name: String, kcal: Double, protein: Double
         var carbs: Double, fat: Double, planEntryID: UUID?, isDemo: Bool
+        /// Added in 0.3: what was in the meal, notes, saved meal, and the photo's file name (photos stay on disk).
+        var items: [LoggedFoodItem]?, notes: String?, recipeID: UUID?, photoFilename: String?
     }
 
     struct Grocery: Codable {
@@ -89,10 +91,10 @@ nonisolated struct BackupDocument: Codable {
 }
 
 enum BackupService {
-    static var defaultBackupFolder: URL { Persistence.appSupportDirectory.appendingPathComponent("Backups", isDirectory: true) }
+    static var defaultBackupFolder: URL { Persistence.dataDirectory.appendingPathComponent("Backups", isDirectory: true) }
 
     static var backupFolder: URL {
-        if let path = UserDefaults.standard.string(forKey: "backupFolder"), !path.isEmpty {
+        if !Persistence.usesCustomStore, let path = UserDefaults.standard.string(forKey: "backupFolder"), !path.isEmpty {
             return URL(fileURLWithPath: path, isDirectory: true)
         }
         return defaultBackupFolder
@@ -132,7 +134,9 @@ enum BackupService {
         }
         doc.intake = context.fetchAll(IntakeRecord.self).map {
             .init(id: $0.id, day: $0.day, timestamp: $0.timestamp, slot: $0.slotRaw, name: $0.name, kcal: $0.kcal, protein: $0.protein,
-                  carbs: $0.carbs, fat: $0.fat, planEntryID: $0.planEntryID, isDemo: $0.isDemo)
+                  carbs: $0.carbs, fat: $0.fat, planEntryID: $0.planEntryID, isDemo: $0.isDemo,
+                  items: $0.items.isEmpty ? nil : $0.items, notes: $0.notes.isEmpty ? nil : $0.notes, recipeID: $0.recipeID,
+                  photoFilename: $0.photoFilename)
         }
         doc.groceries = context.fetchAll(GroceryItemRecord.self).map {
             .init(id: $0.id, name: $0.name, amountText: $0.amountText, section: $0.sectionRaw, isChecked: $0.isChecked,
@@ -221,6 +225,8 @@ enum BackupService {
             let r = IntakeRecord(day: i.day, name: i.name)
             r.id = i.id; r.timestamp = i.timestamp; r.slotRaw = i.slot; r.kcal = i.kcal; r.protein = i.protein; r.carbs = i.carbs
             r.fat = i.fat; r.planEntryID = i.planEntryID; r.isDemo = i.isDemo
+            r.items = i.items ?? []; r.notes = i.notes ?? ""; r.recipeID = i.recipeID
+            r.photoFilename = i.photoFilename.flatMap { FileManager.default.fileExists(atPath: PhotoStore.url(for: $0).path) ? $0 : nil }
             context.insert(r)
         }
         for g in doc.groceries {
@@ -303,7 +309,9 @@ enum BackupService {
         let stamp = formatter.string(from: .now)
         let url = folder.appendingPathComponent("BulkBoard-\(stamp).json")
         try encode(snapshot(context)).write(to: url, options: .atomic)
-        UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "lastBackup")
+        if !Persistence.usesInMemoryStore && !Persistence.usesCustomStore {
+            UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "lastBackup")
+        }
         prune(folder, keep: keep)
         return url
     }
@@ -315,11 +323,18 @@ enum BackupService {
         for old in backups.dropFirst(keep) { try? FileManager.default.removeItem(at: old) }
     }
 
+    /// When the newest backup file in the folder was written, judged from the files themselves.
+    static func newestBackupDate(in folder: URL = backupFolder) -> Date? {
+        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+        return files.filter { $0.lastPathComponent.hasPrefix("BulkBoard-") && $0.pathExtension == "json" }
+            .compactMap { try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }
+            .max()
+    }
+
     /// Daily automatic backup, skipped for throwaway stores.
     static func autoBackupIfNeeded(_ context: ModelContext) {
         guard autoBackupEnabled, !Persistence.usesInMemoryStore, !Persistence.usesCustomStore, context.profile != nil else { return }
-        let last = UserDefaults.standard.double(forKey: "lastBackup")
-        guard Date.now.timeIntervalSince1970 - last > 20 * 3600 else { return }
+        if let newest = newestBackupDate(), Date.now.timeIntervalSince(newest) < 20 * 3600 { return }
         _ = try? writeBackup(context)
     }
 
@@ -350,10 +365,11 @@ enum BackupService {
             court.append(row([iso.string(from: c.date), c.kind.title, "\(c.minutes)", "\(c.rpe)", "\(c.log.load)", c.notes]))
         }
 
-        var intake = [row(["date", "meal", "name", "kcal", "protein_g", "carbs_g", "fat_g"])]
+        var intake = [row(["date", "meal", "name", "kcal", "protein_g", "carbs_g", "fat_g", "items"])]
         for i in context.fetchAll(IntakeRecord.self, sortBy: [SortDescriptor(\.day)]) {
+            let items = i.items.map { "\($0.displayName) (\($0.amountText))" }.joined(separator: "; ")
             intake.append(row([i.day.formatted(.iso8601.year().month().day()), i.slot.title, i.name,
-                               num(i.kcal, 0), num(i.protein), num(i.carbs), num(i.fat)]))
+                               num(i.kcal, 0), num(i.protein), num(i.carbs), num(i.fat), items]))
         }
 
         return ["weights.csv": weights.joined(separator: "\n") + "\n",

@@ -9,13 +9,8 @@ enum BodyActions {
         let record = BodyCheckInRecord(date: date)
         record.measurements = measurements
         if let photo { record.photoFilename = try PhotoStore.save(photo) }
-        record.isDemo = context.profile?.isDemo ?? false
         context.insert(record)
-        if logWeight {
-            let weight = WeightRecord(date: date, weightKg: measurements.weightKg)
-            weight.isDemo = record.isDemo
-            context.insert(weight)
-        }
+        if logWeight { context.insert(WeightRecord(date: date, weightKg: measurements.weightKg)) }
         if let profile = context.profile, abs(profile.heightCm - measurements.heightCm) > 0.5 {
             profile.heightCm = measurements.heightCm
         }
@@ -31,6 +26,13 @@ enum BodyActions {
 
     static func report(for record: BodyCheckInRecord?, sex: Sex) -> PhysiqueReport? {
         record?.measurements.map { PhysiqueAnalyzer.analyze($0, sex: sex) }
+    }
+
+    /// The analysis for the newest check-in, with blank fields filled from earlier check-ins (newest first).
+    static func report(latestOf checkIns: [BodyCheckInRecord], sex: Sex) -> PhysiqueReport? {
+        guard let latest = checkIns.first?.measurements else { return nil }
+        let merged = CoachContext.merged(latest, with: checkIns.dropFirst().compactMap(\.measurements))
+        return PhysiqueAnalyzer.analyze(merged, sex: sex)
     }
 
     /// Dunk inputs from the latest check-in, filling gaps from the profile.
@@ -58,16 +60,5 @@ enum BodyActions {
         }
         TrainingActions.regeneratePlan(for: profile, context: context)
         try? context.save()
-    }
-
-    /// Plain-text context for the vision model.
-    static func aiContext(report: PhysiqueReport, measurements: BodyMeasurements, sex: Sex) -> String {
-        var lines = ["Sex: \(sex.title). Height \(Int(measurements.heightCm)) cm, weight \(Fmt.number(measurements.weightKg)) kg."]
-        for part in report.parts {
-            lines.append("\(part.part.title): \(Fmt.number(part.actualCm)) cm, \(Fmt.int(part.ratio * 100))% of proportion target")
-        }
-        if let bf = report.bodyFatPercent { lines.append("Body fat ≈ \(Fmt.number(bf))%") }
-        if !report.lagging.isEmpty { lines.append("Tape says lagging: \(report.lagging.map(\.title).joined(separator: ", "))") }
-        return lines.joined(separator: "\n")
     }
 }

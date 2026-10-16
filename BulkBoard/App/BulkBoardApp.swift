@@ -4,7 +4,7 @@ import SwiftUI
 @main
 struct BulkBoardApp: App {
     @State private var appModel: AppModel
-    @AppStorage("appearance") private var appearance: AppearancePreference = .dark
+    @AppStorage("appearance") private var appearance: AppearancePreference = .system
 
     private let container: ModelContainer
 
@@ -14,12 +14,15 @@ struct BulkBoardApp: App {
             UserDefaults.standard.setVolatileDomain(["appearance": String(override)], forName: UserDefaults.argumentDomain)
         }
         let model = AppModel()
+        // A new version copies the database aside before it migrates anything.
+        StoreSafety.snapshotIfVersionChanged()
         do {
             container = try Persistence.makeContainer()
+            StoreSafety.markVersionOpened()
         } catch {
-            // A broken store shouldn't brick the app; fall back to memory and surface the error.
+            // A broken store shouldn't brick the app; fall back to memory and surface the error. Nothing is deleted.
             container = try! Persistence.makeContainer(inMemory: true)
-            model.startupError = "Couldn't open your data store (\(error.localizedDescription)). Running with a temporary store."
+            model.startupError = "Couldn't open your data (\(error.localizedDescription)). Nothing was deleted: your database and a copy of it are in ~/Library/Application Support/BulkBoard. This session uses a temporary store, so changes won't be saved."
         }
         _appModel = State(initialValue: model)
     }

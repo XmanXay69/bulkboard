@@ -37,6 +37,12 @@ enum Persistence {
 
     static var usesCustomStore: Bool { ProcessInfo.processInfo.arguments.contains { $0.hasPrefix("--store=") } }
 
+    /// Where photos, backups and snapshots live: Application Support, or next to a custom store so
+    /// test runs never touch your real folders.
+    static var dataDirectory: URL {
+        usesCustomStore ? storeURL.deletingLastPathComponent() : appSupportDirectory
+    }
+
     /// True when running under XCTest or a launch argument asks for a throwaway store.
     static var usesInMemoryStore: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil

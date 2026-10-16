@@ -154,7 +154,7 @@ struct AskCoachSheet: View {
         }
         .padding(24)
         .frame(width: 600, height: 560)
-        .task { await client.refresh() }
+        .task { await client.connect() }
     }
 
     private func run() async {
@@ -167,8 +167,7 @@ struct AskCoachSheet: View {
         do {
             switch mode {
             case .ideas:
-                let targets = profile.targets(latestWeightKg: context.latestWeightKg).result.daily
-                answer = try await client.mealIdeas(prompt, targets: targets, dislikes: profile.dislikes)
+                answer = try await client.mealIdeas(prompt, context: CoachContext.build(context))
             case .estimate:
                 estimate = try await client.estimateMacros(for: prompt)
             case .swap:

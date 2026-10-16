@@ -10,7 +10,7 @@ struct BackupTests {
     @Test func jsonRoundTripRestoresEverything() throws {
         let source = try makeContext()
         SeedService.ensureBuiltIns(source)
-        DemoData.load(into: source)
+        SampleData.load(into: source)
         let custom = FoodRecord(name: "Grandma's lasagna")
         custom.macros = Macros(kcal: 610, protein: 34, carbs: 52, fat: 28)
         source.insert(custom)
@@ -31,6 +31,11 @@ struct BackupTests {
         let originalSets = TrainingActions.completedSessions(source).flatMap(\.sets).count
         #expect(TrainingActions.completedSessions(restored).flatMap(\.sets).count == originalSets)
         #expect(restored.profile?.targets().result.daily == source.profile?.targets().result.daily)
+        let loggedWithItems = source.fetchAll(IntakeRecord.self).filter { !$0.items.isEmpty }
+        #expect(!loggedWithItems.isEmpty)
+        for record in loggedWithItems {
+            #expect(restored.fetchAll(IntakeRecord.self).first { $0.id == record.id }?.items == record.items)
+        }
     }
 
     @Test func rejectsFilesThatArentBackups() {
@@ -42,7 +47,7 @@ struct BackupTests {
     @Test func csvExportHasHeadersAndRows() throws {
         let context = try makeContext()
         SeedService.ensureBuiltIns(context)
-        DemoData.load(into: context)
+        SampleData.load(into: context)
         let files = BackupService.csvFiles(context)
         #expect(Set(files.keys) == ["weights.csv", "lifts.csv", "court-sessions.csv", "intake.csv"])
         #expect(files["weights.csv"]!.hasPrefix("date,weight_kg,weight_lb,note\n"))

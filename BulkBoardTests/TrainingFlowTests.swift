@@ -86,30 +86,42 @@ struct TrainingFlowTests {
     }
 }
 
-@Suite("Demo data")
+@Suite("Sample and legacy demo data")
 @MainActor
-struct DemoDataTests {
-    @Test func loadsEveryScreenAndWipesClean() throws {
+struct SampleDataTests {
+    @Test func sampleFillsEveryScreen() throws {
         let context = try makeContext()
         SeedService.ensureBuiltIns(context)
-        let builtInFoods = context.fetchAll(FoodRecord.self).count
-        DemoData.load(into: context)
-
-        #expect(context.profile?.isDemo == true)
+        SampleData.load(into: context)
         #expect(context.fetchAll(WeightRecord.self).count > 40)
         let sessions = TrainingActions.completedSessions(context)
         #expect(sessions.count >= 30)
         #expect(sessions.map(\.prCount).reduce(0, +) > 10)
         #expect(context.fetchAll(CourtSessionRecord.self).count >= 15)
         #expect(context.fetchAll(IntakeRecord.self).count > 50)
+        #expect(context.fetchAll(IntakeRecord.self).contains { $0.day == Date.now.dayStart && $0.items.count == 2 })
         #expect(!context.fetchAll(GroceryItemRecord.self).isEmpty)
-        #expect(DemoData.hasDemoData(context))
+        #expect(context.fetchAll(RecipeRecord.self).contains { !$0.isBuiltIn })
+        #expect(!context.fetchAll(ProfileRecord.self).contains { $0.isDemo }, "Nothing is tagged as demo any more")
+    }
 
-        DemoData.wipe(context)
-        #expect(context.profile == nil)
-        #expect(context.fetchAll(WeightRecord.self).isEmpty)
-        #expect(context.fetchAll(WorkoutSessionRecord.self).isEmpty)
+    @Test func leftoverDemoDataFromOldVersionsIsRemoved() throws {
+        let context = try makeContext()
+        let profile = onboard(context)
+        let mine = WeightRecord(date: .now, weightKg: 82)
+        context.insert(mine)
+        let demoWeight = WeightRecord(date: .now.adding(days: -1), weightKg: 80)
+        demoWeight.isDemo = true
+        context.insert(demoWeight)
+        let demoMeal = IntakeRecord(day: .now, name: "Demo lunch")
+        demoMeal.isDemo = true
+        context.insert(demoMeal)
+        try context.save()
+
+        StoreSafety.removeLegacyDemoData(context)
+        #expect(context.profile === profile)
+        #expect(context.fetchAll(WeightRecord.self).count == 2, "The onboarding weigh-in and mine stay")
+        #expect(!context.fetchAll(WeightRecord.self).contains { $0.isDemo })
         #expect(context.fetchAll(IntakeRecord.self).isEmpty)
-        #expect(context.fetchAll(FoodRecord.self).count == builtInFoods, "Built-in foods survive a demo wipe")
     }
 }

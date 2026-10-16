@@ -11,7 +11,7 @@ enum PhotoStore {
         if Persistence.usesInMemoryStore {
             dir = FileManager.default.temporaryDirectory.appendingPathComponent("BulkBoard-Photos-\(ProcessInfo.processInfo.processIdentifier)")
         } else {
-            dir = Persistence.appSupportDirectory.appendingPathComponent("Photos", isDirectory: true)
+            dir = Persistence.dataDirectory.appendingPathComponent("Photos", isDirectory: true)
         }
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir

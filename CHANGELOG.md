@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.3.0 · Log your own meals, updates built in
+
+### New
+- **My meals**: log what you actually eat. Add a photo (file, drag, paste, the Mac's camera, or your iPhone via Continuity Camera), list what's in it with the brand and how much (servings, slices, packages, grams, ounces), and BulkBoard looks up the exact label numbers.
+- **Label lookup** in your food list and on Open Food Facts, with barcode lookup (typed, or found in a photo), per-piece and per-package amounts, and a label check line on every match. Fallbacks: estimate with the local AI, type the numbers, or search the web.
+- **Fill in from photo**: the local vision model lists what it sees in a meal photo for you to confirm.
+- **Saved meals**: reuse anything you've logged in one click; saved meals also feed the suggestions.
+- **Self-updating**: a toolbar button lights up when a new release is on GitHub. It backs up your data, downloads the release, verifies its SHA-256 and signature, installs it in place and relaunches. Running from the disk image? It moves itself to Applications first.
+- **AI coach that's ready to go**: BulkBoard starts Ollama when it's installed, downloads the recommended model (`qwen3-vl:4b-instruct`) in one click, and reviews each check-in by itself using your photo, measurements, goals, plan and recent meals: what's behind, plus training and food changes.
+
+### Changed
+- Today shows only meals you've logged. The auto-planner moved to **Meals → Suggested** and nothing there counts until you log it. New profiles start with no meals filled in.
+- A check-in with only some fields (say, just weight) no longer hides the tape numbers or photo from earlier check-ins.
+- Demo data is gone from the app. Leftover demo records from older versions are removed on launch; your own data is never touched.
+- Settings has a new **Online** tab for update checks and food lookup.
+
+### Data
+- Meals now keep their items, amounts, sources, notes and photo, and back up with the rest. Older stores migrate in place.
+- Each new version copies the database to a Snapshots folder before its first launch. Automatic backups now check the backup folder itself, so a missed backup can't be skipped by mistake.
+
+
 ## v0.2.0 · Body & Dunk, new look
 
 ### New

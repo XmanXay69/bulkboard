@@ -66,7 +66,7 @@ struct PhysiqueTab: View {
     private var previous: BodyCheckInRecord? { checkIns.count > 1 ? checkIns[1] : nil }
 
     var body: some View {
-        let report = BodyActions.report(for: latest, sex: profile.sex)
+        let report = BodyActions.report(latestOf: checkIns, sex: profile.sex)
         let review = latest.aiNotes.flatMap { Blob.decode(PhysiqueReview?.self, from: Data($0.utf8), default: nil) }
         VStack(alignment: .leading, spacing: Theme.spacing) {
             HStack(alignment: .top, spacing: Theme.spacing) {
@@ -243,82 +243,114 @@ struct ProportionRow: View {
     }
 }
 
+/// The local AI coach's read on the latest check-in: what's behind, and what to change in training and food.
+/// Runs by itself when the AI is ready, so the card fills in without a click.
 struct AIReviewCard: View {
     @Environment(\.modelContext) private var context
     var checkIn: BodyCheckInRecord
     var report: PhysiqueReport?
     var review: PhysiqueReview?
     var sex: Sex
-    @State private var isWorking = false
-    @State private var error: String?
 
-    private var client: OllamaClient { OllamaClient.shared }
+    @State private var client = OllamaClient.shared
+    @State private var coach = BodyCoach.shared
+
+    private var isReviewing: Bool { coach.reviewing.contains(checkIn.id) }
+
+    private var photoNote: String {
+        guard review?.usedPhoto == true else { return "" }
+        guard let date = review?.photoDate, !Calendar.bulk.isDate(date, inSameDayAs: checkIn.date) else { return " · with photo" }
+        return " · photo from \(date.formatted(.dateTime.month(.abbreviated).day()))"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("AI photo review", systemImage: "sparkles").font(.system(size: 15, weight: .semibold))
+                Label("AI coach", systemImage: "sparkles").font(.system(size: 15, weight: .semibold))
                 Spacer()
                 if let model = checkIn.aiModel, review != nil {
-                    Text(model).font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.textSecondary)
+                    Text("\(model)\(photoNote)")
+                        .font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.textSecondary)
                 }
             }
-            if let review {
-                if !review.lagging.isEmpty {
-                    LabeledContent("Looks behind") { Text(review.lagging.joined(separator: ", ").capitalized) }
-                        .font(.system(size: 13))
+            if isReviewing {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Reviewing your check-in, plan and recent meals on this Mac…")
+                        .font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
                 }
-                if !review.strengths.isEmpty {
-                    LabeledContent("Looks strong") { Text(review.strengths.joined(separator: ", ").capitalized) }
-                        .font(.system(size: 13))
-                }
-                ForEach(review.observations, id: \.self) { line in
+                .padding(.vertical, 6)
+            } else if let review {
+                reviewBody(review)
+            }
+            if !isReviewing { setupOrActions }
+            if let error = coach.errors[checkIn.id], !isReviewing { WarningBanner(message: error, serious: true) }
+        }
+        .card()
+        .task(id: checkIn.id) {
+            await client.connect()
+            coach.reviewIfNeeded(checkIn, context: context)
+        }
+        .onChange(of: client.isAvailable) { _, ready in
+            if ready { coach.reviewIfNeeded(checkIn, context: context) }
+        }
+    }
+
+    @ViewBuilder
+    private func reviewBody(_ review: PhysiqueReview) -> some View {
+        if !review.lagging.isEmpty {
+            LabeledContent("Behind") { Text(review.lagging.joined(separator: ", ").capitalized) }.font(.system(size: 13, weight: .medium))
+        }
+        if !review.strengths.isEmpty {
+            LabeledContent("Strong") { Text(review.strengths.joined(separator: ", ").capitalized) }.font(.system(size: 13))
+        }
+        bullets("What it sees", review.observations)
+        bullets("Training", review.training)
+        bullets("Food", review.nutrition)
+        bullets("Dunk", review.dunk)
+        Text("An AI opinion from your numbers\(review.usedPhoto == true ? " and photo" : ""). The tape is the steadier signal. Apply focus areas on the right to change the plan.")
+            .font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    @ViewBuilder
+    private func bullets(_ title: String, _ lines: [String]) -> some View {
+        if !lines.isEmpty {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.textPrimary)
+                ForEach(lines, id: \.self) { line in
                     Text("• \(line)").font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("An AI opinion from a single photo. Lighting and pose matter; the tape is the steadier signal.")
-                    .font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
             }
-            if checkIn.photoFilename == nil {
-                Text("Add a photo to a check-in to get a second opinion on what looks behind. It's reviewed by a model running on this Mac.")
-                    .font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
-            } else if !client.isAvailable {
-                Text("Start Ollama to review the photo locally. Nothing is uploaded anywhere.")
-                    .font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
-            } else if !client.canSeeImages {
-                Text("Your Ollama models can't read images. Install a vision model, then reopen this screen:")
-                    .font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
-                Text("ollama pull llama3.2-vision").font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
-            } else {
-                HStack {
-                    Button(review == nil ? "Review photo" : "Review again") { Task { await run() } }
-                        .buttonStyle(.bordered)
-                        .disabled(isWorking)
-                    if isWorking {
-                        ProgressView().controlSize(.small)
-                        Text("Running \(client.visionModel) locally…").font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
-                    }
-                }
-            }
-            if let error { WarningBanner(message: error, serious: true) }
         }
-        .card()
-        .task { await client.refresh() }
     }
 
-    private func run() async {
-        guard let filename = checkIn.photoFilename, let photo = PhotoStore.jpegData(filename), let m = checkIn.measurements,
-              let report else { return }
-        isWorking = true
-        error = nil
-        defer { isWorking = false }
-        do {
-            let review = try await client.reviewPhysique(photo: photo, context: BodyActions.aiContext(report: report, measurements: m, sex: sex))
-            checkIn.aiNotes = String(data: Blob.encode(review), encoding: .utf8)
-            checkIn.aiModel = client.visionModel
-            try? context.save()
-        } catch {
-            self.error = error.localizedDescription
+    @ViewBuilder
+    private var setupOrActions: some View {
+        if client.pull != nil || !client.isInstalled || (!client.isAvailable && !client.isStarting) {
+            AIModelSetupView()
+            if client.isInstalled && client.pull == nil && !client.isAvailable {
+                Button("Start Ollama") { Task { await client.startServer() } }.buttonStyle(.bordered).controlSize(.small)
+            }
+        } else if client.isStarting || client.isChecking {
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("Starting the local AI…").font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
+            }
+        } else {
+            if checkIn.photoFilename != nil && !client.canSeeImages {
+                Text("Your photo isn't included yet: the installed model can't read images.")
+                    .font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
+                AIModelSetupView()
+            }
+            HStack {
+                Button(review == nil ? "Review this check-in" : "Review again") { coach.review(checkIn, context: context) }
+                    .buttonStyle(.bordered).controlSize(.small)
+                if checkIn.photoFilename == nil && review?.usedPhoto != true {
+                    Text("Add a photo to a check-in for a visual read too.").font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
+                }
+            }
         }
     }
 }

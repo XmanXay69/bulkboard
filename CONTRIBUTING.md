@@ -14,7 +14,7 @@ Thanks for helping out. BulkBoard is a small, local-first Mac app, so the bar is
 |---|---|
 | Any math (energy, macros, planner, grocery merge, PRs, trends) | `Packages/BulkCore`, with tests |
 | Built-in foods, meals, exercises | `Packages/BulkCore/Sources/BulkCore/Resources/*.json` |
-| Persistence or record fields | `BulkBoard/Models` (bump the schema version if you change a record) |
+| Persistence or record fields | `BulkBoard/Models`. Only add fields, with defaults, so stores migrate in place; test against an old store with `--store=` |
 | Actions that touch the store | `BulkBoard/Services` |
 | Screens | `BulkBoard/Features/<Screen>` |
 | Colors, type, shared components | `BulkBoard/Design` |
@@ -44,11 +44,13 @@ That runs `swift test` for BulkCore and `xcodebuild test` for the app. New logic
 
 ## Screenshots
 
-`scripts/screenshots.sh` rebuilds everything in `docs/screenshots` from demo data, using the app's built-in capture mode (no Screen Recording permission needed). Build the Debug app first.
+`scripts/screenshots.sh` rebuilds everything in `docs/screenshots` from fictional sample data (`Debug/SampleData.swift`, compiled into Debug builds only), using the app's built-in capture mode (no Screen Recording permission needed). Build the Debug app first. The Log a meal shot looks up real products, so it needs a connection.
 
 ## Releases
 
-`scripts/release.sh <version>` builds the universal Release app and writes `dist/BulkBoard-<version>.dmg` (drag-to-install) and a zip. Bump `MARKETING_VERSION` in `project.yml` first, tag `v<version>`, then attach both files to the GitHub release. CI also uploads a DMG artifact for every push.
+`scripts/release.sh <version>` builds the universal Release app and writes `dist/BulkBoard-<version>.dmg` (drag-to-install) and `dist/BulkBoard-<version>-macOS.zip`. Bump `MARKETING_VERSION` in `project.yml` first, tag `v<version>`, then attach both files to the GitHub release. CI also uploads a DMG artifact for every push.
+
+The in-app updater installs the `BulkBoard-<version>-macOS.zip` asset from the latest (non-pre-release) GitHub release, so keep that file name. To test an update end to end without publishing, serve a GitHub-style `latest.json` and the zip locally and launch an older build with `--store=<scratch>/BulkBoard.store --update-feed=http://127.0.0.1:<port>/latest.json --update-auto` (add `--update-test-apps=<folder>` to stand in for /Applications). Those switches only work together with `--update-feed`, and test runs keep their backups and photos next to the scratch store.
 
 ## Pull requests
 

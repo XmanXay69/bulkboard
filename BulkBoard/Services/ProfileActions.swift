@@ -3,7 +3,8 @@ import Foundation
 import SwiftData
 
 enum ProfileActions {
-    /// Creates the profile and everything a new user needs on day one.
+    /// Creates the profile and the training plan. Meals start empty: you log your own, and
+    /// suggestions are there when you ask for them.
     @discardableResult
     static func completeOnboarding(_ draft: OnboardingDraft, context: ModelContext) -> ProfileRecord {
         let profile = ProfileRecord()
@@ -26,8 +27,6 @@ enum ProfileActions {
 
         SeedService.ensureBuiltIns(context)
         TrainingActions.regeneratePlan(for: profile, context: context)
-        try? context.save()
-        MealPlanActions.autoFill(weekOf: .now, context: context, seed: UInt64.random(in: 1...UInt64.max))
         try? context.save()
         return profile
     }

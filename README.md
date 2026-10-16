@@ -5,7 +5,7 @@
 <h1 align="center">BulkBoard</h1>
 
 <p align="center">
-  A local-first Mac app for bulking: macros, meal plans, grocery lists, training, body measurements and progress, in one place. Built for athletes who want to add size without losing their game, dunk included.
+  A local-first Mac app for bulking: macros, meal logging, suggested meals, grocery lists, training, body measurements and progress, in one place. Built for athletes who want to add size without losing their game, dunk included.
 </p>
 
 <p align="center">
@@ -21,14 +21,15 @@
 ## What it does
 
 1. **Sets your calorie and macro targets** from your stats and goal, and shows the math.
-2. **Builds a weekly meal plan** that hits those targets, from a built-in food list or your own recipes.
-3. **Generates the grocery list** from the plan, merged and grouped by aisle.
+2. **Logs what you actually eat**: snap a photo, say what's in it, the brand and how much, and BulkBoard finds the exact label numbers.
+3. **Suggests a week of meals** that hits your targets when you want ideas, and builds the grocery list from it.
 4. **Plans your training week**: a lifting split for a standard gym plus basketball/conditioning days.
-5. **Reads your body**: tape measurements and an optional photo point out lagging muscles, then the plan gives them extra work.
+5. **Reads your body**: a local AI coach looks at your check-in photo and numbers, says what's behind, and the plan gives it extra work.
 6. **Works out what it takes to dunk** from your height, wingspan, reach and vertical, and adds jump training.
 7. **Tracks progress**: bodyweight trend, lifts, PRs, adherence and streaks.
+8. **Updates itself**: a button lights up when there's a new version on GitHub. One click installs it; your data stays put.
 
-No account, no cloud, no analytics. Your data stays on your Mac.
+No account, no cloud sync, no analytics. Your data stays on your Mac.
 
 ## Features
 
@@ -41,17 +42,23 @@ No account, no cloud, no analytics. Your data stays on your Mac.
 
 ![Targets](docs/screenshots/targets.png)
 
-### Meal planner
-- 7-day grid with breakfast, lunch, snacks, dinner and shakes; running totals per day against that day's target.
-- **Auto-fill my week** picks meals and portions so each day lands on target. **Shuffle** re-rolls anything unlocked; **lock** meals you like.
-- Click a slot to pick a meal, or drag from the meal library. Right-click for servings, swap, lock, or mark eaten.
-- Respects allergies and dislikes. A **variety** setting goes from *Meal prep* (repeat a few meals, short grocery list) to *Mix it up*.
-- 80 built-in foods, 44 meals, and **shaker-bottle-only shakes** (powders and liquids only, enforced by tests). An editable whey scoop is pre-seeded under *My foods*.
+### Meals: yours first, suggestions when you want them
+- **My meals** is what you ate. Nothing appears there until you log it, and only logged meals count toward your day.
+- **Log a meal** (⇧⌘E): add a photo if you like (choose one, drop or paste it, take one with the Mac's camera, or use your iPhone through Continuity Camera). Then list what's in it: the product, the brand, and how much (servings, slices, packages, grams or ounces).
+- **Look up** searches your food list and [Open Food Facts](https://openfoodfacts.org), a free, open database of packaged foods, and pulls the exact label numbers: per serving, per piece ("1 slice = 28 g"), per package. Type or photograph a barcode for an exact match. Nothing found? Estimate it with the local AI, type the numbers from the label, or search the web.
+- **Fill in from photo**: with the local AI, BulkBoard lists what it sees in the meal photo for you to confirm and look up.
+- Every match shows a label check ("1 serving (130 g) = 300 kcal") so you can compare it with the package. AI numbers are always marked as estimates.
+- Tick **Save as a meal I can reuse** to log it again in one click. Saved meals also feed the suggestions.
+- **Suggested** is the auto-planner: a 7-day grid that lands each day on target from 80 built-in foods, 44 meals and your saved meals. Shuffle, lock, drag, set variety from *Meal prep* to *Mix it up*, and log a suggestion with "I ate this". Shakes are shaker-bottle-only.
 
-![Meal plan](docs/screenshots/meal-plan.png)
+| My meals | Log a meal |
+|---|---|
+| ![My meals](docs/screenshots/meals-mine.png) | ![Log a meal](docs/screenshots/log-meal.png) |
+
+![Suggested meals](docs/screenshots/meal-plan.png)
 
 ### Grocery list
-- One click builds it from the week's plan. Quantities merge across meals with unit conversion and group by store section.
+- One click builds it from the suggested week. Quantities merge across meals with unit conversion and group by store section.
 - Check-off mode, a phone-sized **pop-out window** for the store, manual items, copy or export as plain text.
 
 ![Grocery list](docs/screenshots/grocery.png)
@@ -69,7 +76,7 @@ No account, no cloud, no analytics. Your data stays on your Mac.
 ### Body & Dunk
 - **Check-ins**: height, weight, wingspan, standing reach, wrist and tape measurements, body fat (or a Navy-method estimate), standing vertical and best running touch, plus an optional photo.
 - **Proportions**: each part is compared with a classic target scaled to your frame (chest = 6.5 × wrist and fixed shares of that, shoulders ≈ 1.618 × waist for the V-taper). The weakest parts are flagged as focus areas. FFMI shows how much lean mass you have relative to your height.
-- **AI photo review** (optional): a vision model running in Ollama on your Mac gives a second opinion on what looks behind. Nothing is uploaded.
+- **AI coach**: a model running in Ollama on your Mac reviews each check-in by itself (no button to press) using your photo, measurements, goal, training plan and recent meals. It says which muscle groups look behind and what to change in training and food. If your newest check-in has no photo, it uses your most recent one. Nothing is uploaded.
 - **Apply to my plan**: focus muscles get extra sets and an accessory on the days that train them, with an optional protein bump. (Food can't target one muscle; the extra training decides where growth shows up.)
 - **Dunk**: estimates your standing reach from height and wingspan (fit to NBA combine data), works out the running jump a dunk needs, measures the gap against your numbers, and shows what each 10 lb of bulk costs in vertical at the same power (Sayers equation). One click adds depth jumps, trap-bar jumps, calf and ankle work, and approach jumps on court days, and can cap your gain rate at 0.5 lb/week.
 
@@ -84,8 +91,13 @@ No account, no cloud, no analytics. Your data stays on your Mac.
 
 <img src="docs/screenshots/progress.png" alt="Progress" width="720">
 
-### Optional local AI
-If [Ollama](https://ollama.com) is running on your Mac, BulkBoard adds meal ideas, macro estimates for anything you type, higher-protein swaps, and (with a vision model such as `llama3.2-vision`) photo reviews. It talks only to `127.0.0.1:11434`. No cloud APIs, no keys. AI numbers are labeled as estimates. Without Ollama, these controls stay hidden.
+### Local AI that's ready to go
+BulkBoard uses [Ollama](https://ollama.com) on your Mac for the AI coach, meal-photo reading, macro estimates and meal ideas. If Ollama is installed, BulkBoard starts it when needed (and stops it on quit). Settings → Local AI downloads the recommended model, `qwen3-vl:4b-instruct` (3.3 GB, reads photos and text), in one click. The AI only talks to `127.0.0.1:11434`: no cloud APIs, no keys. AI numbers are labeled as estimates, and everything else works without it.
+
+### Updates
+A button in the top-right corner lights up when GitHub has a newer release. Click it, read what's new, and choose **Install and relaunch**. BulkBoard saves a backup, downloads the release, checks it against GitHub's SHA-256 checksum and its code signature, swaps itself in place and reopens. Running it straight from the disk image? It offers to move itself to Applications first. Updates never touch your data, which lives outside the app.
+
+![Update](docs/screenshots/update.png)
 
 ### Design
 Neutral and quiet: system fonts, one accent color, native controls, light and dark mode (follows macOS by default).
@@ -98,14 +110,14 @@ Neutral and quiet: system fonts, one accent color, native controls, light and da
 
 **[⬇ Download BulkBoard for Mac (.dmg)](https://github.com/XmanXay69/bulkboard/releases/latest)**
 
-1. Open the DMG from the latest release and drag **BulkBoard** into **Applications**.
+1. Open the DMG from the latest release and drag **BulkBoard** into **Applications** (or open it from the DMG and click **Move to Applications**).
 2. Open it. The build isn't notarized by Apple yet, so macOS blocks the first launch. Go to **System Settings → Privacy & Security** and click **Open Anyway**, or run this once:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/BulkBoard.app
 ```
 
-Requires macOS 15 Sequoia or later, Apple silicon or Intel (universal build). A zip of the same app is attached to each release too. BulkBoard is a native Mac app, so there's no Windows version.
+After that you never need to come back here: the update button installs new versions for you. Requires macOS 15 Sequoia or later, Apple silicon or Intel (universal build). A zip of the same app is attached to each release too (that's what the updater downloads). BulkBoard is a native Mac app, so there's no Windows version.
 
 ## Build from source
 
@@ -127,19 +139,19 @@ Run all tests:
 scripts/test.sh
 ```
 
-To try it without entering your own stats, click **Explore with demo data** on the welcome screen. Demo records carry a Demo badge and can be wiped from Settings → Data.
+The README screenshots come from fictional sample data that only exists in Debug builds (`scripts/screenshots.sh`). The app you download has no demo data.
 
 ## Keyboard shortcuts
 
 | Shortcut | Action |
 |---|---|
-| ⌘1 – ⌘8 | Today, Meal Plan, Grocery, Training, Body & Dunk, Progress, Targets, Foods & Recipes |
-| ⇧⌘F | Auto-fill the week |
-| ⇧⌘R | Shuffle unlocked meals |
+| ⌘1 – ⌘8 | Today, Meals, Grocery, Training, Body & Dunk, Progress, Targets, Foods & Recipes |
+| ⇧⌘E | Log a meal |
+| ⇧⌘F | Suggest meals for the week |
+| ⇧⌘R | Shuffle suggestions |
 | ⇧⌘G | Build grocery list |
 | ⌘[ / ⌘] / ⇧⌘T | Previous / next / this week |
 | ⇧⌘W | Log weigh-in |
-| ⇧⌘E | Quick add food |
 | ⇧⌘L | Start today's workout |
 | ⇧⌘B | Log court session |
 | ⇧⌘A | Ask the coach (with Ollama) |
@@ -148,16 +160,23 @@ To try it without entering your own stats, click **Explore with demo data** on t
 
 ## Your data
 
-- Stored with SwiftData in `~/Library/Application Support/BulkBoard/`; progress photos in its `Photos` folder (downscaled, location metadata stripped).
-- **Automatic daily backups** (last 14 kept) to `…/BulkBoard/Backups` or a folder you pick. Backups include measurements but not photos.
-- **Export / import** a full JSON backup, and export CSVs for weigh-ins, lifts, court sessions and intake (File menu or Settings → Data).
-- The only network connection BulkBoard ever makes is to Ollama on `127.0.0.1`, and only if you enable it.
+- Stored with SwiftData in `~/Library/Application Support/BulkBoard/`; meal and check-in photos in its `Photos` folder (downscaled, location metadata stripped). None of it lives inside the app, so updates and reinstalls leave it alone.
+- Each new version copies the database to `…/BulkBoard/Snapshots` before its first launch, and the updater saves a backup before installing.
+- **Automatic daily backups** (last 14 kept) to `…/BulkBoard/Backups` or a folder you pick. Backups include meals and measurements but not photos.
+- **Export / import** a full JSON backup, and export CSVs for weigh-ins, lifts, court sessions and meals (File menu or Settings → Data).
+
+**What goes over the network**, all optional and switchable in Settings → Online:
+- **Food lookup**: the product and brand you type (or a barcode) go to Open Food Facts when you press Look up.
+- **Update checks**: every few hours BulkBoard asks GitHub's public API for the latest release.
+- **Local AI**: only to Ollama on `127.0.0.1`. Ollama itself downloads the model when you ask it to.
+
+No accounts, no analytics, no tracking. Nothing about you is sent anywhere.
 
 ## Tech stack
 
 - **SwiftUI + SwiftData + Swift Charts**, Swift 6 strict concurrency, macOS 15+.
-- **BulkCore**, a pure Swift package with no UI and no persistence, holds all the math: TDEE, gain-rate planning, macro splits, meal auto-fill, grocery merging, the split generator (with focus and dunk modes), PR detection, overload suggestions, proportions and FFMI, dunk math, trend/projection, streaks. It's covered by 109 unit tests (`swift test`).
-- The app target maps SwiftData records to BulkCore value types. 38 app tests cover onboarding, planning, groceries, training, body check-ins, progress, demo data and backups against an in-memory store.
+- **BulkCore**, a pure Swift package with no UI and no persistence, holds all the math: TDEE, gain-rate planning, macro splits, meal auto-fill, grocery merging, the split generator (with focus and dunk modes), PR detection, overload suggestions, proportions and FFMI, dunk math, trend/projection, streaks. Also the portion math (servings, slices, packages, grams), Open Food Facts parsing and ranking, and release version checks. It's covered by 131 unit tests (`swift test`).
+- The app target maps SwiftData records to BulkCore value types. 49 app tests cover onboarding, meal logging, suggestions, groceries, training, body check-ins, the AI coach context, progress, leftover-demo cleanup and backups against an in-memory store.
 - Built-in foods, meals and exercises ship as JSON in `Packages/BulkCore/Sources/BulkCore/Resources`. Tests check every food's calories against its macros, every recipe's ingredients, and that every shake is shaker-safe.
 
 ```
@@ -166,10 +185,10 @@ BulkBoard/
 ├── BulkBoard/
 │   ├── App/                  # app entry, root/sidebar, menu commands
 │   ├── Models/               # SwiftData records, persistence, record ↔ core mapping
-│   ├── Services/             # meals, grocery, training, body, progress, backup, photos, Ollama, demo data
-│   ├── Features/             # Today, Meals, Grocery, Training, Body, Progress, Targets, Library, Settings, Onboarding
+│   ├── Services/             # meal logging, food lookup, updater, grocery, training, body, AI coach, backup, photos, Ollama
+│   ├── Features/             # Today, Meals (mine, suggested, log sheet), Grocery, Training, Body, Progress, Targets, Library, Settings, Onboarding
 │   ├── Design/               # theme tokens, components, charts, toasts, app mark
-│   └── Debug/                # launch-argument screenshot capture
+│   └── Debug/                # launch-argument screenshot capture, Debug-only sample data
 ├── BulkBoardTests/           # app-level tests (in-memory store)
 ├── scripts/                  # test, capture, screenshots, icon, release
 └── project.yml               # XcodeGen spec
@@ -178,7 +197,7 @@ BulkBoard/
 ## Roadmap
 
 - [ ] Side-by-side photo comparison between check-ins
-- [ ] Barcode / label scanning via Continuity Camera
+- [ ] Live barcode scanning from the camera feed (photos with barcodes work today)
 - [ ] iPhone companion for logging sets and groceries at the gym (opt-in sync)
 - [ ] Plate calculator and warm-up set generator
 - [ ] Deload weeks and periodization blocks

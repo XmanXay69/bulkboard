@@ -21,9 +21,12 @@ struct MealFlowTests {
         #expect(!whey.isBuiltIn) // lives in "My foods" so it's clearly editable
     }
 
-    @Test func onboardingAutoFillsTheWeekOnTarget() throws {
+    @Test func onboardingLeavesMealsToYouAndSuggestionsHitTargets() throws {
         let context = try makeContext()
         let profile = onboard(context)
+        #expect(MealPlanActions.entries(weekOf: .now, context: context).isEmpty, "No meals appear until you ask for suggestions")
+        #expect(context.fetchAll(IntakeRecord.self).isEmpty)
+        suggestWeek(context)
         let entries = MealPlanActions.entries(weekOf: .now, context: context)
         #expect(entries.count == 7 * profile.mealSlots.count)
 
@@ -40,12 +43,13 @@ struct MealFlowTests {
     @Test func shuffleKeepsLockedAndEatenMeals() throws {
         let context = try makeContext()
         onboard(context)
+        suggestWeek(context)
         let library = MealLibrary(context)
         let entries = MealPlanActions.entries(weekOf: .now, context: context).sorted { ($0.day, $0.slotIndex) < ($1.day, $1.slotIndex) }
         let locked = entries[0]
         locked.isLocked = true
         let eaten = entries[1]
-        IntakeActions.toggleEaten(eaten, library: library, context: context)
+        MealLogActions.toggleSuggestion(eaten, library: library, context: context)
         let lockedID = locked.id, lockedMeal = locked.recipeID, eatenID = eaten.id
 
         for seed in 1...4 { MealPlanActions.autoFill(weekOf: .now, context: context, seed: UInt64(seed)) }
@@ -77,19 +81,22 @@ struct MealFlowTests {
     @Test func eatingLogsAndUnlogsIntake() throws {
         let context = try makeContext()
         onboard(context)
+        suggestWeek(context)
         let library = MealLibrary(context)
         let entry = try #require(MealPlanActions.entries(weekOf: .now, context: context).first)
-        IntakeActions.toggleEaten(entry, library: library, context: context)
+        MealLogActions.toggleSuggestion(entry, library: library, context: context)
         let logged = try #require(context.fetchAll(IntakeRecord.self).first)
-        #expect(logged.macros == library.macros(for: entry))
+        #expect(abs(logged.macros.kcal - library.macros(for: entry).kcal) < 0.5)
         #expect(logged.planEntryID == entry.id)
-        IntakeActions.toggleEaten(entry, library: library, context: context)
+        #expect(!logged.items.isEmpty, "Suggestions log with their ingredients as items")
+        MealLogActions.toggleSuggestion(entry, library: library, context: context)
         #expect(context.fetchAll(IntakeRecord.self).isEmpty)
     }
 
     @Test func autoFillRespectsAllergies() throws {
         let context = try makeContext()
         onboard(context) { $0.allergens = [.peanut, .dairy] }
+        suggestWeek(context)
         let library = MealLibrary(context)
         for entry in MealPlanActions.entries(weekOf: .now, context: context) {
             let template = try #require(library.templates[entry.recipeID!])
@@ -105,6 +112,7 @@ struct GroceryFlowTests {
     @Test func generatesMergedListFromThePlan() throws {
         let context = try makeContext()
         onboard(context)
+        suggestWeek(context)
         GroceryActions.generate(weekOf: .now, context: context)
         let items = context.fetchAll(GroceryItemRecord.self)
         #expect(items.count >= 10)
@@ -116,6 +124,7 @@ struct GroceryFlowTests {
     @Test func regeneratingKeepsManualItemsAndChecks() throws {
         let context = try makeContext()
         onboard(context)
+        suggestWeek(context)
         GroceryActions.generate(weekOf: .now, context: context)
         GroceryActions.addManual(name: "Paper towels", amount: "1 pack", section: .other, context: context)
         let first = try #require(context.fetchAll(GroceryItemRecord.self).first { !$0.isManual })
@@ -132,6 +141,7 @@ struct GroceryFlowTests {
     @Test func plainTextGroupsByAisle() throws {
         let context = try makeContext()
         onboard(context)
+        suggestWeek(context)
         GroceryActions.generate(weekOf: .now, context: context)
         let text = GroceryActions.plainText(context.fetchAll(GroceryItemRecord.self), weekStart: Date.now.weekStart)
         #expect(text.hasPrefix("BulkBoard groceries · week of"))
@@ -142,6 +152,7 @@ struct GroceryFlowTests {
     @Test func clearCheckedRemovesOnlyChecked() throws {
         let context = try makeContext()
         onboard(context)
+        suggestWeek(context)
         GroceryActions.generate(weekOf: .now, context: context)
         let total = context.fetchAll(GroceryItemRecord.self).count
         context.fetchAll(GroceryItemRecord.self).prefix(3).forEach { $0.isChecked = true }

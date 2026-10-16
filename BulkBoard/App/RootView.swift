@@ -25,9 +25,11 @@ struct RootView: View {
             }
         }
         .task {
+            StoreSafety.removeLegacyDemoData(context)
             SeedService.ensureBuiltIns(context)
             BackupService.autoBackupIfNeeded(context)
-            await OllamaClient.shared.refresh()
+            Updater.shared.start(context: context)
+            await OllamaClient.shared.connect()
             await ScreenshotDirector.run(appModel: appModel, context: context)
         }
     }
@@ -36,6 +38,7 @@ struct RootView: View {
 struct MainView: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.modelContext) private var context
+    @State private var updater = Updater.shared
     var profile: ProfileRecord
 
     var body: some View {
@@ -44,15 +47,25 @@ struct MainView: View {
             SidebarView(profile: profile)
                 .frame(width: 216)
             Rectangle().fill(Theme.stroke).frame(width: 1).ignoresSafeArea()
-            detail(for: appModel.section)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .pageBackground()
+            VStack(spacing: 0) {
+                MoveToApplicationsBanner()
+                detail(for: appModel.section)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .pageBackground()
         }
         .overlay { ToastOverlay() }
+        .toolbar {
+            // Capture mode renders glass toolbar items as blank shapes, so leave it out of screenshots.
+            if !ScreenshotDirector.isCapturing {
+                ToolbarItem(placement: .primaryAction) { UpdateToolbarButton() }
+            }
+        }
+        .sheet(isPresented: $updater.showSheet) { UpdateSheet() }
         .sheet(item: $appModel.activeSheet) { sheet in
             switch sheet {
             case .weighIn: WeighInSheet(units: profile.unitSystem, last: context.latestWeightKg)
-            case .quickAdd: QuickAddSheet(library: MealLibrary(context))
+            case let .logMeal(draft): LogMealSheet(draft: draft)
             case let .court(minutes, kind): CourtSessionSheet(minutes: minutes, kind: kind)
             case .coach: AskCoachSheet(profile: profile)
             }
@@ -63,7 +76,7 @@ struct MainView: View {
     private func detail(for section: AppSection) -> some View {
         switch section {
         case .dashboard: DashboardView(profile: profile)
-        case .meals: MealPlanView(profile: profile)
+        case .meals: MealsView(profile: profile)
         case .grocery: GroceryView()
         case .training: TrainingView(profile: profile)
         case .body: BodyView(profile: profile)
@@ -84,10 +97,7 @@ struct SidebarView: View {
                 AppMark(size: 26)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("BulkBoard").font(.system(size: 14, weight: .semibold)).foregroundStyle(Theme.textPrimary)
-                    HStack(spacing: 5) {
-                        Text(profile.goalMode.title).font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
-                        if profile.isDemo { DemoBadge() }
-                    }
+                    Text(profile.goalMode.title).font(.system(size: 11)).foregroundStyle(Theme.textSecondary)
                 }
                 .lineLimit(1)
             }

@@ -15,14 +15,14 @@ struct ProgressFlowTests {
                                      court: context.fetchAll(CourtSessionRecord.self), plan: context.workoutPlan)
     }
 
-    @Test func demoHistoryProducesTrendProjectionAndXP() throws {
+    @Test func sampleHistoryProducesTrendProjectionAndXP() throws {
         let context = try makeContext()
         SeedService.ensureBuiltIns(context)
-        DemoData.load(into: context)
+        SampleData.load(into: context)
         let stats = try stats(context)
         #expect(stats.trend.count == stats.weights.count)
         let projection = try #require(stats.projection)
-        #expect(projection.kgPerWeek > 0) // the demo is bulking
+        #expect(projection.kgPerWeek > 0) // the sample is bulking
         #expect(projection.projectedGoalDate != nil)
         #expect(stats.longestStreak >= stats.currentStreak)
         #expect(stats.xp > 1000)
@@ -34,14 +34,15 @@ struct ProgressFlowTests {
     @Test func eatingTheWholeDayHitsTargetAndStartsAStreak() throws {
         let context = try makeContext()
         onboard(context)
+        suggestWeek(context)
         let library = MealLibrary(context)
         let today = Date.now.dayStart
         for entry in MealPlanActions.entries(weekOf: today, context: context) where entry.day == today {
-            IntakeActions.toggleEaten(entry, library: library, context: context)
+            MealLogActions.toggleSuggestion(entry, library: library, context: context)
         }
         let stats = try stats(context)
         let day = try #require(stats.adherence(on: today))
-        #expect(day.isHit, "Auto-filled plan eaten in full should land on target")
+        #expect(day.isHit, "A suggested day eaten in full should land on target")
         #expect(stats.currentStreak == 1)
         #expect(stats.thisWeek.daysHitMacros == 1)
     }

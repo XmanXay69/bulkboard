@@ -72,7 +72,6 @@ struct CheckInSheet: View {
     @Environment(AppModel.self) private var appModel
     @Bindable var draft: CheckInDraft
     @State private var error: String?
-    @State private var isDropTarget = false
 
     private var unit: String { draft.units.lengthUnit }
 
@@ -149,34 +148,8 @@ struct CheckInSheet: View {
     private var photoColumn: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionLabel("Photo (optional)")
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Theme.surfaceRaised)
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(isDropTarget ? Theme.accent : Theme.stroke, style: StrokeStyle(lineWidth: 1, dash: draft.photo == nil ? [5, 4] : []))
-                if let data = draft.photo, let image = NSImage(data: data) {
-                    Image(nsImage: image).resizable().scaledToFit().clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                } else {
-                    VStack(spacing: 6) {
-                        Image(systemName: "photo").font(.system(size: 24)).foregroundStyle(Theme.textSecondary)
-                        Text("Drop a photo or choose one").font(.system(size: 12)).foregroundStyle(Theme.textSecondary)
-                    }
-                }
-            }
-            .frame(height: 300)
-            .dropDestination(for: Data.self) { items, _ in
-                guard let data = items.first, NSImage(data: data) != nil else { return false }
-                draft.photo = data
-                return true
-            } isTargeted: { isDropTarget = $0 }
-            HStack {
-                Button("Choose…") { if let data = PhotoStore.chooseImage() { draft.photo = data } }
-                    .buttonStyle(.bordered).controlSize(.small)
-                if draft.photo != nil {
-                    Button("Remove") { draft.photo = nil }.buttonStyle(.bordered).controlSize(.small)
-                }
-            }
-            Text("Front-facing, relaxed, good light. Stays on this Mac; location data is stripped. Only a local AI model ever sees it, and only if you ask.")
+            PhotoInput(photo: $draft.photo, height: 300, prompt: "Front-facing, relaxed, good light")
+            Text("Stays on this Mac; location data is stripped. Only the AI model running on this Mac sees it.")
                 .font(.system(size: 11))
                 .foregroundStyle(Theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -203,8 +176,12 @@ struct CheckInSheet: View {
 
     private func save() {
         do {
-            try BodyActions.saveCheckIn(draft.measurements, date: draft.date, photo: draft.photo, logWeight: draft.logWeight, context: context)
-            appModel.celebrate(.workoutComplete, title: "Check-in saved", detail: draft.date.formatted(date: .abbreviated, time: .omitted))
+            let record = try BodyActions.saveCheckIn(draft.measurements, date: draft.date, photo: draft.photo,
+                                                     logWeight: draft.logWeight, context: context)
+            let ai = OllamaClient.shared.isAvailable
+            if ai { BodyCoach.shared.review(record, context: context) }
+            appModel.celebrate(.workoutComplete, title: "Check-in saved",
+                               detail: ai ? "The AI coach is reviewing it now" : draft.date.formatted(date: .abbreviated, time: .omitted))
             dismiss()
         } catch {
             self.error = error.localizedDescription

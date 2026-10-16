@@ -102,7 +102,6 @@ struct TrainingHistoryView: View {
                     Label("\(session.prCount)", systemImage: "trophy.fill").foregroundStyle(Theme.textPrimary)
                         .font(.system(size: 12, weight: .bold))
                 }
-                if session.isDemo { DemoBadge() }
             }
         }
         .card(padding: 12)
@@ -125,7 +124,6 @@ struct TrainingHistoryView: View {
             Spacer()
             Text("\(session.minutes) min · RPE \(session.rpe)").foregroundStyle(Theme.textSecondary)
             Text("load \(session.log.load)").font(.system(size: 13, weight: .bold).monospacedDigit()).foregroundStyle(Theme.accent)
-            if session.isDemo { DemoBadge() }
         }
         .card(padding: 12)
         .contextMenu {

@@ -4,7 +4,8 @@ import SwiftData
 
 // SwiftData records. Records hold only scalar fields, string arrays and JSON blobs, and
 // reference each other by UUID. That keeps the store simple to migrate, export and wipe.
-// Every record carries `isDemo` so demo data can be removed in one pass.
+// Fields are only ever added, with defaults, so every update migrates the store in place.
+// `isDemo` is legacy: v0.1–0.2 could load sample data, and launch removes any that's left.
 
 @Model
 final class ProfileRecord {
@@ -110,7 +111,7 @@ final class PlanEntryRecord {
     }
 }
 
-/// What was actually eaten. Macros are snapshotted so edits to foods don't rewrite history.
+/// A meal (or snack) the user ate. Totals are snapshotted so edits to foods don't rewrite history.
 @Model
 final class IntakeRecord {
     var id: UUID = UUID()
@@ -122,8 +123,16 @@ final class IntakeRecord {
     var protein: Double = 0
     var carbs: Double = 0
     var fat: Double = 0
+    /// Set when the meal was logged from a suggestion.
     var planEntryID: UUID?
     var isDemo: Bool = false
+    /// JSON `[LoggedFoodItem]`: what was in it, how much, and where the numbers came from. Added in 0.3.
+    var itemsData: Data?
+    /// File name inside the Photos folder.
+    var photoFilename: String?
+    var notes: String = ""
+    /// Set when the meal was logged from a saved meal.
+    var recipeID: UUID?
 
     init(day: Date, name: String) {
         self.day = day

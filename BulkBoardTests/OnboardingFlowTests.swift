@@ -21,6 +21,12 @@ func onboard(_ context: ModelContext, configure: (OnboardingDraft) -> Void = { _
     return ProfileActions.completeOnboarding(draft, context: context)
 }
 
+/// Suggested meals for this week (onboarding no longer fills them in).
+@MainActor
+func suggestWeek(_ context: ModelContext, seed: UInt64 = 7) {
+    MealPlanActions.autoFill(weekOf: .now, context: context, seed: seed)
+}
+
 @Suite("Onboarding and targets")
 @MainActor
 struct OnboardingFlowTests {

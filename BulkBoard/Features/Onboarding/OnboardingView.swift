@@ -131,22 +131,17 @@ struct OnboardingView: View {
             }
             VStack(alignment: .leading, spacing: 10) {
                 feature("target", "Calorie and macro targets that show their math")
-                feature("fork.knife", "A week of meals auto-filled to hit them")
-                feature("cart", "Grocery list in one click")
+                feature("camera", "Log your meals with a photo; label numbers looked up for you")
+                feature("wand.and.stars", "Suggested meals and a grocery list when you want them")
                 feature("dumbbell", "Lifting and conditioning plan with PR tracking")
                 feature("figure.arms.open", "Body measurements, weak-point focus and a dunk plan")
-                feature("lock", "Everything stays on this Mac")
+                feature("lock", "Your data stays on this Mac")
             }
             .padding(.vertical, 8)
-            HStack(spacing: 12) {
-                Button("Explore with demo data") {
-                    DemoData.load(into: context)
-                }
-                .buttonStyle(.bordered)
-                Button("Set up my plan") { step = .body }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-            }
+            Button("Set up my plan") { step = .body }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .keyboardShortcut(.defaultAction)
             Spacer(minLength: 40)
         }
         .frame(maxWidth: .infinity)

@@ -19,14 +19,21 @@ struct BulkBoardCommands: Commands {
             .disabled(!appModel.hasProfile)
         }
 
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates…") {
+                Task { await Updater.shared.check(userInitiated: true) }
+            }
+        }
+
         CommandMenu("Plan") {
             Group {
-                Button("Auto-fill Week") {
+                Button("Suggest Meals for the Week") {
                     MealPlanActions.autoFill(weekOf: appModel.planWeekStart, context: context, seed: UInt64.random(in: 1...UInt64.max))
+                    appModel.mealsTab = .suggested
                     appModel.section = .meals
                 }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
-                Button("Shuffle Unlocked Meals") {
+                Button("Shuffle Suggestions") {
                     MealPlanActions.autoFill(weekOf: appModel.planWeekStart, context: context, seed: UInt64.random(in: 1...UInt64.max))
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
@@ -50,7 +57,7 @@ struct BulkBoardCommands: Commands {
             Group {
                 Button("Weigh-In…") { appModel.activeSheet = .weighIn }
                     .keyboardShortcut("w", modifiers: [.command, .shift])
-                Button("Quick Add Food…") { appModel.activeSheet = .quickAdd }
+                Button("Log a Meal…") { appModel.logMeal() }
                     .keyboardShortcut("e", modifiers: [.command, .shift])
                 Button("Start Today's Workout") { startTodaysWorkout() }
                     .keyboardShortcut("l", modifiers: [.command, .shift])

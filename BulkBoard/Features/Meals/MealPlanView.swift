@@ -36,8 +36,11 @@ struct MealPlanView: View {
         HStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    PageHeader(title: "Meal Plan", subtitle: "Week of \(weekStart.monthDay)") {
-                        weekNavigator
+                    PageHeader(title: "Meals", subtitle: "Suggested for the week of \(weekStart.monthDay). Nothing here counts until you log it.") {
+                        HStack(spacing: 10) {
+                            MealsTabPicker()
+                            weekNavigator
+                        }
                     }
                     actionBar(isEmpty: entries.isEmpty)
                     summary(entries: entries, library: library, snapshot: snapshot)
@@ -72,22 +75,22 @@ struct MealPlanView: View {
             Button { appModel.planWeekStart = weekStart.adding(days: 7) } label: { Image(systemName: "chevron.right") }
                 .help("Next week")
         }
-        .buttonStyle(.bordered).controlSize(.small)
+        .buttonStyle(.bordered)
     }
 
     private func actionBar(isEmpty: Bool) -> some View {
         HStack(spacing: 10) {
             Button {
                 withAnimation(.spring) { MealPlanActions.autoFill(weekOf: weekStart, context: context, seed: seed()) }
-            } label: { Label(isEmpty ? "Auto-fill my week" : "Re-fill unlocked", systemImage: "wand.and.stars") }
+            } label: { Label(isEmpty ? "Suggest my week" : "Re-suggest unlocked", systemImage: "wand.and.stars") }
                 .buttonStyle(.borderedProminent).controlSize(.small)
-                .help("Fill every unlocked slot to hit your targets (⇧⌘F)")
+                .help("Suggest meals for every unlocked slot that hit your targets, from the meal list and your saved meals (⇧⌘F)")
             Button {
                 withAnimation(.spring) { MealPlanActions.autoFill(weekOf: weekStart, context: context, seed: seed()) }
             } label: { Label("Shuffle", systemImage: "shuffle") }
                 .buttonStyle(.bordered).controlSize(.small)
                 .disabled(isEmpty)
-                .help("New picks for unlocked meals. Locked and eaten meals stay.")
+                .help("New picks for unlocked meals. Locked and logged meals stay.")
             Button(role: .destructive) {
                 withAnimation { MealPlanActions.clearWeek(weekStart, context: context) }
             } label: { Label("Clear unlocked", systemImage: "trash") }
@@ -316,8 +319,8 @@ struct MealSlotCell: View {
             entry.isLocked.toggle()
             try? context.save()
         }
-        Button(eatenIDs.contains(entry.id) ? "Mark not eaten" : "Mark eaten", systemImage: "checkmark.circle") {
-            IntakeActions.toggleEaten(entry, library: library, context: context)
+        Button(eatenIDs.contains(entry.id) ? "Remove from my meals" : "I ate this (log it)", systemImage: "checkmark.circle") {
+            MealLogActions.toggleSuggestion(entry, library: library, context: context)
         }
         Menu("Servings") {
             ForEach([0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3], id: \.self) { value in

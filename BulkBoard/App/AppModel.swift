@@ -10,7 +10,7 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
     var title: String {
         switch self {
         case .dashboard: "Today"
-        case .meals: "Meal Plan"
+        case .meals: "Meals"
         case .grocery: "Grocery List"
         case .training: "Training"
         case .body: "Body & Dunk"
@@ -39,6 +39,11 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
+enum MealsTab: String, CaseIterable {
+    case mine = "My meals"
+    case suggested = "Suggested"
+}
+
 enum BodyTab: String, CaseIterable {
     case physique = "Physique"
     case dunk = "Dunk"
@@ -54,14 +59,14 @@ enum TrainingTab: String, CaseIterable {
 /// Sheets any screen or menu command can open.
 enum ActiveSheet: Identifiable, Equatable {
     case weighIn
-    case quickAdd
+    case logMeal(MealDraft)
     case court(minutes: Int, kind: CourtSessionKind)
     case coach
 
     var id: String {
         switch self {
         case .weighIn: "weighIn"
-        case .quickAdd: "quickAdd"
+        case let .logMeal(draft): "logMeal-\(draft.id)"
         case .court: "court"
         case .coach: "coach"
         }
@@ -79,12 +84,19 @@ final class AppModel {
     /// Set to a week start to ask the grocery screen to rebuild from that week's plan.
     var groceryRequest: Date?
     var showMealLibrary = false
+    var mealsTab: MealsTab = .mine
+    /// Day shown in My meals.
+    var mealsDay: Date = Date.now.dayStart
     var trainingTab: TrainingTab = .week
     var bodyTab: BodyTab = .physique
     var celebration: Celebration?
     var activeSheet: ActiveSheet?
     var hasProfile = false
     let restTimer = RestTimer()
+
+    func logMeal(day: Date? = nil, slot: MealSlot? = nil) {
+        activeSheet = .logMeal(MealDraft(day: day ?? .now, slot: slot))
+    }
 
     func celebrate(_ kind: Celebration.Kind, title: String, detail: String) {
         celebration = Celebration(kind: kind, title: title, detail: detail)

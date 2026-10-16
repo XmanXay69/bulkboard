@@ -94,16 +94,38 @@ struct BodyFlowTests {
         #expect(restored.profile?.dunkGoal == true)
     }
 
-    @Test func demoIncludesCheckInsAndWipesThem() throws {
+    @Test func sampleIncludesCheckIns() throws {
         let context = try makeContext()
         SeedService.ensureBuiltIns(context)
-        DemoData.load(into: context)
+        SampleData.load(into: context)
         let checkIns = context.fetchAll(BodyCheckInRecord.self)
         #expect(checkIns.count == 2)
         let latest = try #require(context.latestCheckIn)
         let report = DunkCalculator.report(BodyActions.dunkInputs(profile: context.profile!, checkIn: latest, latestWeightKg: context.latestWeightKg))
         #expect(report.verdict == .close)
-        DemoData.wipe(context)
-        #expect(context.fetchAll(BodyCheckInRecord.self).isEmpty)
+    }
+
+    @Test func coachContextCarriesTheWholePicture() throws {
+        let context = try makeContext()
+        SeedService.ensureBuiltIns(context)
+        SampleData.load(into: context)
+        let text = CoachContext.build(context)
+        #expect(text.contains("Goal: Bulk + Performance"))
+        #expect(text.contains("Daily targets:"))
+        #expect(text.contains("This week's plan:"))
+        #expect(text.contains("Last 14 days: logged food on"))
+        #expect(text.contains("Calf:"))
+        #expect(text.contains("since last check-in"))
+        #expect(text.contains("Dunk:"))
+    }
+
+    @Test func reviewDecodesLooseAndOldAnswers() throws {
+        let loose = #"{"lagging": ["calves"], "strengths": "arms", "observations": "Calves trail.", "training": ["Calf raises 4x/week"], "nutrition": [], "dunk": []}"#
+        let review = try JSONDecoder().decode(PhysiqueReview.self, from: Data(loose.utf8))
+        #expect(review.strengths == ["arms"])
+        #expect(review.observations == ["Calves trail."])
+        let old = #"{"lagging": ["chest"], "strengths": [], "observations": ["x"]}"#
+        let saved = try JSONDecoder().decode(PhysiqueReview.self, from: Data(old.utf8))
+        #expect(saved.training.isEmpty && saved.laggingParts == [.chest])
     }
 }

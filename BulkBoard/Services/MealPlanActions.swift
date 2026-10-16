@@ -100,7 +100,6 @@ enum MealPlanActions {
                 let entry = PlanEntryRecord(day: days[dayIndex], slotIndex: slotIndex, slot: slots[slotIndex])
                 entry.recipeID = meal.candidateID
                 entry.servings = meal.servings
-                entry.isDemo = profile.isDemo
                 context.insert(entry)
             }
         }
@@ -117,46 +116,12 @@ enum MealPlanActions {
         entry.foodID = recipeID == nil ? foodID : nil
         entry.servings = servings
         entry.slot = slot
-        if existing == nil {
-            entry.isDemo = context.profile?.isDemo ?? false
-            context.insert(entry)
-        }
+        if existing == nil { context.insert(entry) }
         try? context.save()
     }
 
     static func clearWeek(_ date: Date, context: ModelContext) {
         for entry in entries(weekOf: date, context: context) where !entry.isLocked { context.delete(entry) }
-        try? context.save()
-    }
-}
-
-enum IntakeActions {
-    static func intake(for entry: PlanEntryRecord, in intake: [IntakeRecord]) -> IntakeRecord? {
-        intake.first { $0.planEntryID == entry.id }
-    }
-
-    /// Logs a planned meal as eaten (snapshotting its macros), or un-logs it.
-    static func toggleEaten(_ entry: PlanEntryRecord, library: MealLibrary, context: ModelContext) {
-        let entryID = entry.id
-        let descriptor = FetchDescriptor<IntakeRecord>(predicate: #Predicate { $0.planEntryID == entryID })
-        if let existing = try? context.fetch(descriptor), !existing.isEmpty {
-            existing.forEach(context.delete)
-        } else {
-            let record = IntakeRecord(day: entry.day, name: library.name(for: entry))
-            record.slotRaw = entry.slotRaw
-            record.macros = library.macros(for: entry)
-            record.planEntryID = entry.id
-            record.isDemo = entry.isDemo
-            context.insert(record)
-        }
-        try? context.save()
-    }
-
-    static func logQuick(name: String, macros: Macros, slot: MealSlot, day: Date = .now, context: ModelContext) {
-        let record = IntakeRecord(day: day.dayStart, name: name)
-        record.slotRaw = slot.rawValue
-        record.macros = macros
-        context.insert(record)
         try? context.save()
     }
 }
